@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Pumping",
+    "slug": "pumping",
+    "scheme": "pumping",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.bwk.pumping",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationCategoryType": "public.app-category.healthcare-fitness"
+      }
+    },
+    "android": {
+      "package": "com.bwk.pumping",
+      "adaptiveIcon": {
+        "backgroundColor": "#A8503A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-font",
+      "./plugins/withoutPushEntitlement"
+    ],
+    "extra": {
+      "revenueCatApiKeyIos": "TODO_REVENUECAT_PUBLIC_IOS_KEY",
+      "eas": {
+        "projectId": "TODO_EXPO_PROJECT_ID"
+      }
+    },
+    "owner": "bkdeveloper123"
+  }
+}
