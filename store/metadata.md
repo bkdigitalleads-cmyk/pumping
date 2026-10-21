@@ -77,7 +77,7 @@ Same answers as Odo: Data Not Collected for app content. Sessions, bags and sett
 - `pumping_pro_weekly`: auto-renewing weekly subscription with a 3-day free trial (introductory offer). Preselected on the onboarding paywall.
 - `pumping_pro_lifetime`: non-consumable, $29.99, shown in the app as "Pumping Pass", "One-time, yours to keep". Preselected on the in-app paywall.
 - No yearly plan.
-- RevenueCat: entitlement `pro`; offering `default` with `$rc_weekly` → pumping_pro_weekly and `$rc_lifetime` → pumping_pro_lifetime. Put the RevenueCat public iOS key (starts with `appl_`) in app.json `extra.revenueCatApiKeyIos`, replacing the TODO. Until then the app runs with purchases switched off.
+- RevenueCat: entitlement `pro`; offering `default` with `$rc_weekly` → pumping_pro_weekly and `$rc_lifetime` → pumping_pro_lifetime. Set up by Cowork on Oct 21: RevenueCat project Pumping for App Store app com.bwk.pumping, both products attached, public iOS key in app.json `extra.revenueCatApiKeyIos`.
 - Prices and trial length shown in the app always come from StoreKit.
 
 ## App Review note (paste into ASC, Notes)
