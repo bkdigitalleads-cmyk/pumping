@@ -76,7 +76,7 @@ Three options in `icon-options.png` (big, and at 60x60 on light and dark wallpap
 - [x] Keyboard: every scroll view with an input adjusts for the keyboard (`automaticallyAdjustKeyboardInsets`), and the session and onboarding inputs sit in keyboard-avoiding views.
 
 11. Store metadata
-- [x] Subtitle "Breastfeeding Timer & Reminder" (30/30). Keywords `pump,lactation,exclusive,supply,breast,bag,frozen,storage,schedule,nicu,oz,session,expressed,mom` (96/100). Screenshot plan and description updated for the bottle and bags.
+- [x] Name "Pumping Tracker: Breast Milk" (28/30; "Milk Stash" was taken in App Store Connect), subtitle "Breastfeeding & Pump Timer" (26/30), keywords `stash,reminder,lactation,exclusive,supply,bag,frozen,freezer,storage,schedule,nicu,oz,session,mom` (97/100). An earlier round of this pass used "Breastfeeding Timer & Reminder" and a 96-character list; both were replaced the same day. Screenshot plan and description updated for the bottle and bags.
 
 12. Done
 - [x] `after/*.png`, the same screens as `before/` plus the bag sheet, the past-session form and scrolled Trends and Settings.

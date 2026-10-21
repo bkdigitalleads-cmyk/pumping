@@ -2,20 +2,22 @@
 
 Everything here is pasted into App Store Connect by Brian and Cowork. No em dashes anywhere. Never write "Pump Log" (another app's registered trademark).
 
-## Name (27/30)
-Pumping Tracker: Milk Stash
+## Name (28/30)
+Pumping Tracker: Breast Milk
+
+(Changed Oct 21: "Pumping Tracker: Milk Stash" was taken in App Store Connect. App record: ASC app id 6825142604, bundle id com.bwk.pumping.)
 
 Home screen name (app.json `name`): Pumping
 
-## Subtitle (30/30)
-Breastfeeding Timer & Reminder
+## Subtitle (26/30)
+Breastfeeding & Pump Timer
 
-(Changed Oct 21, Brian approved. Was "Milk Stash, Timer & Reminders", which repeated "Milk Stash" from the name.)
+(Changed Oct 21 with the new name, Brian approved. Earlier drafts: "Milk Stash, Timer & Reminders", then "Breastfeeding Timer & Reminder".)
 
-## Keywords (96/100)
-pump,lactation,exclusive,supply,breast,bag,frozen,storage,schedule,nicu,oz,session,expressed,mom
+## Keywords (97/100)
+stash,reminder,lactation,exclusive,supply,bag,frozen,freezer,storage,schedule,nicu,oz,session,mom
 
-(Brian approved, Oct 21.) Rules: no word from the name or subtitle (pumping, tracker, milk, stash, breastfeeding, timer, reminder), never "log" and never "pump log".
+(Brian approved, Oct 21.) Rules: no word from the name or subtitle (pumping, tracker, breast, milk, breastfeeding, pump, timer), never "log" and never "pump log".
 
 ## Promotional text (154/170)
 Log a session in seconds, see today's ounces at a glance, and get your next-pump reminder counted from the start or the end. Your freezer stash, in order.
