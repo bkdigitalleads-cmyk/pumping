@@ -5,17 +5,32 @@ import { Theme } from '../theme';
 import Tape, { Marker } from './Tape';
 
 /**
- * A milk storage bag as it really looks: a zip top with tear notches, clear
- * plastic, milk settled at the bottom, and the printed write-on stripe with
- * the bag number, date and amount in marker. Frozen bags get a faint frost.
+ * A milk storage bag as it really looks: a flat pouch, widest at the top and
+ * tapering a little toward the bottom. At the top a heat-sealed strip with
+ * two tear notches, the zip line just under it, then the printed white
+ * write-on stripe with the bag number, date and amount in marker. Below it
+ * clear plastic with the milk level showing, and a small gusset at the
+ * bottom so it stands. No lid, no rim, no shoulders. It leans a little on
+ * the shelf and has a soft fold. Frozen bags get a faint frost.
  * "Use next" is a piece of tape stuck across the corner.
  */
 const VB_W = 100;
 const VB_H = 142;
-const BODY = 'M8 15 H92 L90 128 Q89.4 138 80 138 H20 Q10.6 138 10 128 Z';
+/**
+ * The whole pouch outline, seal strip included: widest at the top, the
+ * sides bowing out a touch like soft plastic (ruler-straight tapered sides
+ * read as a cup), small corners and a flat base.
+ */
+const BODY = 'M5 3 H95 Q97 70 91 131 Q90.6 137 86 137 H14 Q9.4 137 9 131 Q3 70 5 3 Z';
+/** Roughly where each side of the pouch is at height y (the straight line under the bow). */
+const leftAt = (y: number) => 5 + ((y - 3) * 4) / 123;
+const rightAt = (y: number) => 95 - ((y - 3) * 4) / 123;
+const SEAL_Y = 13;
+const ZIP_Y = 17.5;
+const STRIPE = { x: 15, y: 23, w: 70, h: 44 };
 /** The milk can rise from the bottom of the bag to just under the zip. */
-const MILK_BOTTOM = 138;
-const MILK_TOP = 30;
+const MILK_BOTTOM = 137;
+const MILK_TOP = 24;
 /** A storage bag holds about 6 oz; the fill is drawn against that. */
 export const BAG_CAPACITY_ML = 180;
 
@@ -56,26 +71,25 @@ export default function BagDrawing({
   const edge = ghost ? theme.inkFaint : theme.plasticEdge;
   const milkTop = MILK_BOTTOM - Math.max(0, Math.min(1, fill)) * (MILK_BOTTOM - MILK_TOP);
   const clipId = `bag${seed}`;
+  // Bags never stand perfectly straight: a small lean, one way or the other.
+  const lean = ghost ? -2 : seed % 2 ? -3 : 2.5;
+  const notch = (side: 'l' | 'r') => {
+    const y = 8;
+    const x = side === 'l' ? leftAt(y) : rightAt(y);
+    const d = side === 'l' ? 3.6 : -3.6;
+    return `M${x} ${y - 2.6} L${x + d} ${y} L${x} ${y + 2.6} Z`;
+  };
 
   return (
-    <View style={{ width, height }}>
+    <View style={{ width, height, transform: [{ rotate: `${lean}deg` }] }}>
       <Svg width={width} height={height} viewBox={`0 0 ${VB_W} ${VB_H}`}>
         <Defs>
           <ClipPath id={clipId}>
             <Path d={BODY} />
           </ClipPath>
         </Defs>
-        {/* zip top */}
-        <Path
-          d="M8 15 V8 Q8 3.5 12.5 3.5 H87.5 Q92 3.5 92 8 V15 Z"
-          fill={ghost ? 'none' : theme.plastic}
-          stroke={edge}
-          strokeWidth={1.2}
-          strokeDasharray={dash}
-        />
-        <Line x1={8} y1={9.5} x2={92} y2={9.5} stroke={edge} strokeWidth={1} strokeDasharray={dash} />
-        {/* body */}
-        <Path d={BODY} fill={ghost ? 'none' : theme.plastic} stroke={edge} strokeWidth={1.3} strokeDasharray={dash} />
+        {/* the flat pouch */}
+        <Path d={BODY} fill={ghost ? 'none' : theme.plastic} stroke={edge} strokeWidth={1.3} strokeLinejoin="round" strokeDasharray={dash} />
         {!ghost && fill > 0 && (
           <G clipPath={`url(#${clipId})`}>
             <Rect x={0} y={milkTop} width={VB_W} height={VB_H} fill={theme.milk} />
@@ -83,32 +97,46 @@ export default function BagDrawing({
           </G>
         )}
         {frozen && !ghost && <Frost theme={theme} seed={seed} clipId={clipId} />}
-        {/* tear notches */}
-        <Path d="M8 18 L11.5 20 L8 22" fill={theme.bg} stroke={edge} strokeWidth={0.8} />
-        <Path d="M92 18 L88.5 20 L92 22" fill={theme.bg} stroke={edge} strokeWidth={0.8} />
+        {/* heat seal at the top, with its crimp lines and the two tear notches */}
+        <Line x1={leftAt(SEAL_Y)} y1={SEAL_Y} x2={rightAt(SEAL_Y)} y2={SEAL_Y} stroke={edge} strokeWidth={1} strokeDasharray={dash} />
+        {!ghost && (
+          <>
+            <Line x1={9} y1={5.6} x2={91} y2={5.6} stroke={edge} strokeWidth={0.5} opacity={0.6} />
+            <Line x1={9} y1={10.4} x2={91} y2={10.4} stroke={edge} strokeWidth={0.5} opacity={0.6} />
+          </>
+        )}
+        <Path d={notch('l')} fill={theme.bg} stroke={edge} strokeWidth={0.8} />
+        <Path d={notch('r')} fill={theme.bg} stroke={edge} strokeWidth={0.8} />
+        {/* the zip, just under the seal */}
+        <Line x1={leftAt(ZIP_Y)} y1={ZIP_Y - 1} x2={rightAt(ZIP_Y)} y2={ZIP_Y - 1} stroke={edge} strokeWidth={0.9} strokeDasharray={dash} />
+        <Line x1={leftAt(ZIP_Y)} y1={ZIP_Y + 1} x2={rightAt(ZIP_Y)} y2={ZIP_Y + 1} stroke={edge} strokeWidth={0.9} strokeDasharray={dash} />
         {/* the printed write-on stripe */}
         <Rect
-          x={16}
-          y={26}
-          width={68}
-          height={48}
-          rx={2}
+          x={STRIPE.x}
+          y={STRIPE.y}
+          width={STRIPE.w}
+          height={STRIPE.h}
+          rx={1.5}
           fill={ghost ? 'none' : theme.stripe}
           stroke={edge}
           strokeWidth={0.7}
           strokeDasharray={ghost ? '3 3' : undefined}
         />
-        <Line x1={20} y1={42} x2={80} y2={42} stroke={theme.rule} strokeWidth={0.6} />
-        <Line x1={20} y1={58} x2={80} y2={58} stroke={theme.rule} strokeWidth={0.6} />
-        {/* printed ounce marks down the side */}
+        <Line x1={STRIPE.x + 4} y1={STRIPE.y + 16} x2={STRIPE.x + STRIPE.w - 4} y2={STRIPE.y + 16} stroke={theme.rule} strokeWidth={0.6} />
+        <Line x1={STRIPE.x + 4} y1={STRIPE.y + 31} x2={STRIPE.x + STRIPE.w - 4} y2={STRIPE.y + 31} stroke={theme.rule} strokeWidth={0.6} />
+        {/* a soft fold in the plastic */}
+        <Path d="M66 70 C 71 88, 61 106, 67 127" stroke={edge} strokeWidth={0.8} fill="none" opacity={ghost ? 0.5 : 0.35} strokeDasharray={dash} />
+        {/* the gusset at the bottom, so it stands */}
+        <Path d="M10 129 Q50 121 90 129" stroke={edge} strokeWidth={0.9} fill="none" opacity={0.7} strokeDasharray={dash} />
+        {/* printed ounce marks down the side, below the stripe */}
         {!ghost &&
-          [0, 1, 2, 3, 4, 5].map((i) => (
-            <Line key={i} x1={84} y1={130 - i * 16} x2={88} y2={130 - i * 16} stroke={edge} strokeWidth={0.7} />
+          [78, 92, 106, 120].map((y) => (
+            <Line key={y} x1={rightAt(y) - 6} y1={y} x2={rightAt(y) - 2} y2={y} stroke={edge} strokeWidth={0.7} />
           ))}
       </Svg>
       {/* what the parent wrote on the stripe */}
       <View
-        style={[styles.stripe, { left: 18 * k, top: 26 * k, width: 64 * k, height: 48 * k }]}
+        style={[styles.stripe, { left: (STRIPE.x + 2) * k, top: STRIPE.y * k, width: (STRIPE.w - 4) * k, height: STRIPE.h * k }]}
         pointerEvents="none"
         importantForAccessibility="no-hide-descendants"
       >
@@ -144,8 +172,8 @@ function Frost({ theme, seed, clipId }: { theme: Theme; seed: number; clipId: st
     return (r % 1000) / 1000;
   };
   const marks = Array.from({ length: 26 }, () => {
-    const x = 12 + rand() * 76;
-    const y = 18 + rand() * 116;
+    const y = 22 + rand() * 110;
+    const x = leftAt(y) + 5 + rand() * (rightAt(y) - leftAt(y) - 10);
     const s = 1.2 + rand() * 1.8;
     return `M${(x - s).toFixed(1)} ${y.toFixed(1)} H${(x + s).toFixed(1)} M${x.toFixed(1)} ${(y - s).toFixed(1)} V${(y + s).toFixed(1)}`;
   }).join(' ');

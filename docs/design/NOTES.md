@@ -2,7 +2,7 @@
 
 ## Concept: the freezer door at 3am
 
-Real pumping gear is plain and handled: clear storage bags with a zip top and a white write-on stripe, bottles with ounce marks printed up the side, a strip of masking tape and a Sharpie, a wire shelf in the freezer. The app is drawn from those objects instead of from app-kit parts. Today is a bottle that fills to your goal. The stash is bags standing on fridge and freezer shelves with what you wrote on them in marker, frost on the frozen ones and a piece of tape on the one to use next. Labels are masking tape. Everything else is quiet type on cream paper (black at night) with hairlines between rows, so the drawings carry the personality and the screens stay easy to read with one eye open.
+Real pumping gear is plain and handled: flat storage pouches with tear notches, a zip line and a white write-on stripe, wide-mouth collection bottles with a ridged screw cap and ounce marks printed up the side, a strip of masking tape and a Sharpie, a wire shelf in the freezer. The app is drawn from those objects instead of from app-kit parts. Today is a bottle that fills to your goal. The stash is bags standing on fridge and freezer shelves with what you wrote on them in marker, frost on the frozen ones and a piece of tape on the one to use next. Labels are masking tape. Everything else is quiet type on cream paper (black at night) with hairlines between rows, so the drawings carry the personality and the screens stay easy to read with one eye open.
 
 Before and after: `before/` and `after/` hold the same screens at 393x852 @3x, light and dark. They come from a throwaway web copy of the app (in-memory database, stubbed RevenueCat with a $4.99 weekly and a $29.99 Pumping Pass, clock at 2:20 pm), so fonts and layout match the app; native-only details (haptics, keep-awake, Dynamic Type, the iOS switch) are not visible in them.
 
@@ -15,7 +15,13 @@ Before and after: `before/` and `after/` hold the same screens at 393x852 @3x, l
 
 ## Icon
 
-Three options in `icon-options.png` (big, and at 60x60 on light and dark wallpaper): 1 bag, 2 bottle, 3 bag with tape. Picked 1, the storage bag. The bottle reads fastest, but it is what every feeding and baby app already uses, so on a home screen full of baby apps it says "baby app", not "pumping". The bag is the object only pumping parents handle every day, it is the thing the stash is built around, and its silhouette (sealed strip, tear notches, tilted pouch, white stripe with two marker strokes) still reads at 60 px on the clay field. Option 3 adds tape, but at 60 px the tape turns into a smudge across the bag. Drawn in `store/icon.js` (`node icon.js options` redraws the comparison, `node icon.js` writes the assets).
+Three options in `icon-options.png` (big, and at 60x60 on light and dark wallpaper), redrawn Oct 21 after Brian's review: 1 bag, 2 bottle, 3 bag with tape. All three use the drawings the app now uses: the bag is a flat pouch (widest at the top, a heat seal with two tear notches cut into the outline, a clay zip line, the white write-on stripe, milk below, a gusseted flat base), and the bottle is a pump collection bottle (flat screw cap with fine ridges, wide mouth, straight sides, oz marks), with no nipple.
+
+Picked 1, the bag, again. Checked at 60 px on light and dark:
+- Bag: the first pouch of this round still read as a cup at 60 px, because straight tapered sides, a thick outline and round bottom corners are exactly what a cup looks like. The picked version bows the sides out a touch like soft plastic, uses a thinner outline, a flat base with small corners and a stronger lean, and adds a clay zip line and side marks. At 60 px it now reads as a labeled pouch: the notched top, the zip line and the white stripe survive at that size, and nothing about it looks like a lid or a rim.
+- Bottle: the fastest read at 60 px, and with the cap it is clearly a pump bottle up close. At 60 px, though, the ridged cap turns into a plain lid and it could be any jar or pill bottle, and bottles are what every baby and feeding app already uses.
+- Tape: up close it is the most "handled", but at 60 px the tape becomes a pale band across the bag and the marker strokes are lost, so it reads less clearly than option 1.
+The bag is also the object only pumping parents handle every day and the thing the stash is built around, so it says "pumping" rather than "baby app". Drawn in `store/icon.js` (`node icon.js options` redraws the comparison, `node icon.js` writes the assets).
 
 ## Checklist
 
@@ -23,8 +29,8 @@ Three options in `icon-options.png` (big, and at 60x60 on light and dark wallpap
 - [x] `before/*.png` committed first, in its own commit, before any design change: Today empty and with data, session running, Stash empty and with bags, Trends, Settings, every onboarding step (3 value screens, focus, plan, reminder, stash, source, trial, trial reminder), onboarding paywall, in-app paywall, SAMPLE preview. 393x852 @3x, light and dark.
 
 1. Concept
-- [x] Today: a large bottle (`ui/Bottle.tsx`) whose milk level is today's total against the goal, with printed graduations on the side in oz or mL (the top mark is the goal). The milk rises with a 700 ms ease-out when a session is saved.
-- [x] Stash: bags drawn as storage bags (`ui/BagDrawing.tsx`: zip top, tear notches, write-on stripe, printed side marks), standing on wire shelves grouped by fridge, freezer and deep freezer (`ui/Shelf.tsx`).
+- [x] Today: a large pump collection bottle (`ui/Bottle.tsx`: flat screw cap with fine ridges, wide mouth, straight sides, no nipple) whose milk level is today's total against the goal, with printed graduations on the side in oz or mL (the top mark is the goal). The milk rises with a 700 ms ease-out when a session is saved.
+- [x] Stash: bags drawn as flat storage pouches (`ui/BagDrawing.tsx`: widest at the top and tapering a little, a heat seal with two tear notches, the zip line under it, the write-on stripe, clear plastic below with the milk level, a soft fold, a small gusset so it stands, printed side marks, leaning a little; no lid, rim or shoulders), standing on wire shelves grouped by fridge, freezer and deep freezer (`ui/Shelf.tsx`).
 - [x] The stripe shows number, date and amount in Caveat Brush (bundled, OFL), used only for bag stripes and tape.
 - [x] Frozen bags get a faint frost texture (haze plus a scatter of small crystals, the same for a given bag every time).
 - [x] "Use next" is a piece of tape stuck across the bag's corner; a bag past its date gets a "past date" tape instead of a badge.

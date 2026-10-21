@@ -2,9 +2,9 @@ const sharp = require('sharp');
 
 // Pumping icon. Three options are drawn for docs/design/icon-options.png
 // (`node icon.js options`); the chosen one is written to ../assets (`node icon.js`).
-//   bag    - a milk storage bag: clay zip top, milk to the fill line, a write-on stripe
-//   bottle - a bottle with printed ounce marks, milk two thirds up
-//   tape   - a storage bag with a strip of masking tape and two marker strokes
+//   bag    - a milk storage pouch: tear notches, zip line, write-on stripe, milk, gusset
+//   bottle - a pump collection bottle: flat ridged screw cap, straight sides, oz marks
+//   tape   - the same pouch with a strip of masking tape and two marker strokes
 // Chosen: bag. See docs/design/NOTES.md for why.
 const CHOSEN = 'bag';
 
@@ -21,46 +21,72 @@ const bg = (fill) =>
     ? `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B85C44"/><stop offset="1" stop-color="${CLAY_DARK}"/></linearGradient></defs><rect width="1024" height="1024" fill="url(#g)"/>`
     : `<rect width="1024" height="1024" fill="${CREAM}"/>`;
 
-// A storage pouch, in a 1024 box: taller than wide, a sealed zip strip on
-// top, tear notches under it, and a rounded gusset at the bottom.
-const POUCH = 'M318 250 H706 L712 806 Q712 884 634 884 H390 Q312 884 312 806 Z';
-const pouch = ({ stripe = true, fill = 600 } = {}) => `
+// The storage pouch, drawn on the same 100x142 grid as src/ui/BagDrawing.tsx
+// and scaled up: a flat pouch, widest at the top, tapering to a small
+// gusset; a heat-sealed strip with two tear notches cut into the outline,
+// the zip line under it, the white write-on stripe, milk below, a soft fold.
+// No lid, no rim, no shoulders. The notches are cut deep so the pouch still
+// reads as a bag, not a cup, at 60 px.
+const leftAt = (y) => 5 + ((y - 3) * 4) / 123;
+const rightAt = (y) => 95 - ((y - 3) * 4) / 123;
+// Outline, clockwise, with a V-shaped tear notch cut into each side at y = 9.
+const NOTCH_Y = 9;
+const NOTCH_H = 4;
+const NOTCH_D = 7;
+const POUCH = [
+  'M5 3 H95',
+  `L${rightAt(NOTCH_Y - NOTCH_H)} ${NOTCH_Y - NOTCH_H}`,
+  `L${rightAt(NOTCH_Y) - NOTCH_D} ${NOTCH_Y}`,
+  `L${rightAt(NOTCH_Y + NOTCH_H)} ${NOTCH_Y + NOTCH_H}`,
+  // soft plastic: the sides bow out a touch instead of running ruler-straight like a cup
+  'Q97 70 91 131 Q90.6 137 86 137 H14 Q9.4 137 9 131 Q3 70',
+  `${leftAt(NOTCH_Y + NOTCH_H)} ${NOTCH_Y + NOTCH_H}`,
+  `L${leftAt(NOTCH_Y) + NOTCH_D} ${NOTCH_Y}`,
+  `L${leftAt(NOTCH_Y - NOTCH_H)} ${NOTCH_Y - NOTCH_H}`,
+  'Z',
+].join(' ');
+const pouch = ({ stripe = true, milkY = 84 } = {}) => `
     <defs><clipPath id="p"><path d="${POUCH}"/></clipPath></defs>
     <path d="${POUCH}" fill="#F3E6D3"/>
     <g clip-path="url(#p)">
-      <rect x="290" y="${fill}" width="440" height="320" fill="${MILK}"/>
-      <rect x="290" y="${fill - 4}" width="440" height="14" fill="${MILK_LINE}"/>
-      <path d="M312 834 Q512 790 712 834" stroke="${MILK_LINE}" stroke-width="10" fill="none"/>
+      <rect x="0" y="${milkY}" width="100" height="60" fill="${MILK}"/>
+      <rect x="0" y="${milkY - 0.6}" width="100" height="2" fill="${MILK_LINE}"/>
     </g>
-    <rect x="306" y="150" width="412" height="112" rx="22" fill="${CREAM}"/>
-    <rect x="306" y="196" width="412" height="10" fill="${MILK_LINE}"/>
-    <path d="M312 290 L344 308 L312 326 Z" fill="${CLAY}"/>
-    <path d="M712 290 L680 308 L712 326 Z" fill="${CLAY}"/>
-    ${stripe ? `<rect x="368" y="350" width="288" height="170" rx="10" fill="#FFFFFF"/>
-    <path d="M400 410 Q450 396 520 408" stroke="${INK}" stroke-width="20" fill="none" stroke-linecap="round"/>
-    <path d="M400 468 Q470 454 610 470" stroke="${INK}" stroke-width="20" fill="none" stroke-linecap="round"/>` : ''}`;
+    <path d="${POUCH}" fill="none" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/>
+    <line x1="${leftAt(15)}" y1="15" x2="${rightAt(15)}" y2="15" stroke="${INK}" stroke-width="1.8"/>
+    <line x1="${leftAt(20)}" y1="20.5" x2="${rightAt(20)}" y2="20.5" stroke="${CLAY}" stroke-width="3"/>
+    <path d="M10 129 Q50 121 90 129" stroke="${INK}" stroke-width="1.3" fill="none" opacity="0.55"/>
+    ${[84, 96, 108, 120].map((y, i) => `<line x1="${(i % 2 ? 84 : 80)}" y1="${y}" x2="89" y2="${y}" stroke="${CLAY}" stroke-width="1.8" stroke-linecap="round"/>`).join('')}
+    <path d="M68 74 C 73 92, 63 108, 69 127" stroke="${INK}" stroke-width="1.1" fill="none" opacity="0.3"/>
+    ${stripe ? `<rect x="17" y="27" width="66" height="40" rx="1.5" fill="#FFFFFF" stroke="${INK}" stroke-width="1"/>
+    <path d="M23 39 Q32 36 46 38.5" stroke="${INK}" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+    <path d="M23 54 Q36 51 66 54" stroke="${CLAY}" stroke-width="3.6" fill="none" stroke-linecap="round"/>` : ''}`;
+// 100x142 grid to 1024: scaled 5.2 and centered, leaning a little.
+const POUCH_AT = 'translate(512 520) rotate(-10) translate(-260 -384) scale(5.2)';
 
 const art = {
   bag: () => `<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
     ${bg('clay')}
-    <g transform="translate(512 520) scale(1.16) translate(-512 -520) rotate(-7 512 540)">${pouch()}</g>
+    <g transform="${POUCH_AT}">${pouch()}</g>
   </svg>`,
+  // A pump collection bottle: wide mouth, straight sides, a flat screw cap with ridges, oz marks.
   bottle: () => `<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
     ${bg('clay')}
-    <defs><clipPath id="b"><path d="M404 356 H620 Q664 356 670 404 L680 820 Q680 892 610 892 H414 Q344 892 344 820 L354 404 Q360 356 404 356 Z"/></clipPath></defs>
-    <path d="M462 214 C462 150 486 112 512 112 C538 112 562 150 562 214 Z" fill="${TAPE}"/>
-    <rect x="374" y="206" width="276" height="150" rx="30" fill="${CREAM}"/>
-    <path d="M404 356 H620 Q664 356 670 404 L680 820 Q680 892 610 892 H414 Q344 892 344 820 L354 404 Q360 356 404 356 Z" fill="#F0E2CE"/>
-    <g clip-path="url(#b)"><rect x="300" y="560" width="420" height="380" fill="${MILK}"/><rect x="300" y="556" width="420" height="12" fill="${MILK_LINE}"/></g>
-    ${[0, 1, 2, 3, 4, 5].map((i) => `<rect x="${i % 2 ? 560 : 520}" y="${450 + i * 70}" width="${i % 2 ? 80 : 120}" height="16" rx="8" fill="${CLAY}"/>`).join('')}
+    <defs><clipPath id="b"><path d="M368 352 H656 Q694 352 696 392 L696 820 Q696 888 628 888 H396 Q328 888 328 820 L328 392 Q330 352 368 352 Z"/></clipPath></defs>
+    <rect x="372" y="300" width="280" height="60" fill="#F0E2CE"/>
+    <path d="M368 352 H656 Q694 352 696 392 L696 820 Q696 888 628 888 H396 Q328 888 328 820 L328 392 Q330 352 368 352 Z" fill="#F0E2CE"/>
+    <g clip-path="url(#b)"><rect x="300" y="580" width="420" height="380" fill="${MILK}"/><rect x="300" y="576" width="420" height="12" fill="${MILK_LINE}"/></g>
+    <rect x="340" y="150" width="344" height="160" rx="16" fill="${CREAM}"/>
+    ${Array.from({ length: 11 }, (_, i) => `<rect x="${372 + i * 28}" y="176" width="7" height="108" rx="3.5" fill="${CLAY}" opacity="0.45"/>`).join('')}
+    ${[0, 1, 2, 3, 4, 5].map((i) => `<rect x="${i % 2 ? 586 : 546}" y="${450 + i * 64}" width="${i % 2 ? 70 : 110}" height="16" rx="8" fill="${CLAY}"/>`).join('')}
   </svg>`,
   tape: () => `<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
     ${bg('clay')}
-    <g transform="translate(512 520) scale(1.16) translate(-512 -520) rotate(-7 512 540)">${pouch({ stripe: false })}
-      <g transform="rotate(-6 512 440)">
-        <path d="M250 380 L280 370 L262 400 L284 418 L262 438 L282 466 L250 476 L774 476 L744 464 L764 438 L742 418 L764 398 L746 370 L774 380 Z" fill="${TAPE}"/>
-        <path d="M330 428 Q400 404 480 422" stroke="${INK}" stroke-width="24" fill="none" stroke-linecap="round"/>
-        <path d="M540 430 Q610 410 690 424" stroke="${INK}" stroke-width="24" fill="none" stroke-linecap="round"/>
+    <g transform="${POUCH_AT}">${pouch({ stripe: false })}
+      <g transform="rotate(-6 50 46)">
+        <path d="M6 37 L10 35.5 L7.5 40 L10.5 43 L7.5 46 L10 50 L6 51.5 L94 51.5 L90 50 L92.5 46 L89.5 43 L92.5 40 L90 35.5 L94 37 Z" fill="${TAPE}"/>
+        <path d="M18 45 Q28 41 40 44" stroke="${INK}" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M52 45 Q63 41 78 44" stroke="${INK}" stroke-width="4" fill="none" stroke-linecap="round"/>
       </g>
     </g>
   </svg>`,

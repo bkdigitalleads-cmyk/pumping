@@ -6,14 +6,22 @@ import { toUnit, Unit } from '../logic';
 import { useReduceMotion } from './motion';
 
 /**
- * A bottle with printed graduations. The top mark is the daily goal, and
+ * A pump collection bottle: wide mouth, straight sides, a flat screw-on cap
+ * with fine ridges, and ounce marks printed up the side. No nipple: this is
+ * the bottle milk is pumped into, not a feeding bottle.
+ * The marks are printed graduations. The top mark is the daily goal, and
  * the milk level is today's total against it, so a full bottle is the goal
  * met. Marks are ounces or mL, whichever the parent uses. The milk rises
  * with a short ease when a session is saved (instantly with Reduce Motion).
  */
 const VB_W = 140;
 const VB_H = 280;
-const BODY = 'M44 62 H96 Q108 62 110 76 L112 252 Q112 272 92 272 H48 Q28 272 28 252 L30 76 Q32 62 44 62 Z';
+/** Straight-sided body: a short shoulder under the neck, then straight down to a flat, rounded-off base. */
+const BODY = 'M40 62 H100 Q110 62 111 72 L111 258 Q111 272 97 272 H43 Q29 272 29 258 L29 72 Q30 62 40 62 Z';
+/** The cap: a short cylinder a little wider than the neck. */
+const CAP = { x: 31, y: 22, w: 78, h: 30 };
+/** The threaded neck between the cap and the shoulder, as wide as the mouth. */
+const NECK = { x: 38, y: 50, w: 64, h: 13 };
 const GOAL_Y = 84;
 const ZERO_Y = 262;
 
@@ -82,11 +90,20 @@ export default function Bottle({
             <Path d={BODY} />
           </ClipPath>
         </Defs>
-        {/* nipple and collar */}
-        <Path d="M58 40 C58 20 63 8 70 8 C77 8 82 20 82 40 Z" fill={ghost ? 'none' : theme.sunk} stroke={edge} strokeWidth={1.4} strokeDasharray={dash} />
-        <Rect x={36} y={38} width={68} height={26} rx={6} fill={ghost ? 'none' : theme.accentSoft} stroke={ghost ? edge : theme.accent} strokeWidth={1.4} strokeDasharray={dash} />
-        <Line x1={40} y1={46} x2={100} y2={46} stroke={ghost ? edge : theme.accent} strokeWidth={0.8} opacity={0.6} strokeDasharray={dash} />
-        <Line x1={40} y1={56} x2={100} y2={56} stroke={ghost ? edge : theme.accent} strokeWidth={0.8} opacity={0.6} strokeDasharray={dash} />
+        {/* threaded neck */}
+        <Rect x={NECK.x} y={NECK.y} width={NECK.w} height={NECK.h} fill={ghost ? 'none' : theme.plastic} stroke={edge} strokeWidth={1.4} strokeDasharray={dash} />
+        {!ghost && <Line x1={NECK.x} y1={NECK.y + 6} x2={NECK.x + NECK.w} y2={NECK.y + 8} stroke={edge} strokeWidth={0.8} />}
+        {/* flat screw-on cap with fine vertical ridges */}
+        <Rect x={CAP.x} y={CAP.y} width={CAP.w} height={CAP.h} rx={3} fill={ghost ? 'none' : theme.accentSoft} stroke={ghost ? edge : theme.accent} strokeWidth={1.5} strokeDasharray={dash} />
+        {!ghost && (
+          <>
+            {Array.from({ length: 12 }, (_, i) => {
+              const x = CAP.x + 6 + i * ((CAP.w - 12) / 11);
+              return <Line key={i} x1={x} y1={CAP.y + 5} x2={x} y2={CAP.y + CAP.h - 4} stroke={theme.accent} strokeWidth={0.9} opacity={0.55} />;
+            })}
+            <Line x1={CAP.x + 2} y1={CAP.y + 2.5} x2={CAP.x + CAP.w - 2} y2={CAP.y + 2.5} stroke={theme.accent} strokeWidth={0.9} opacity={0.8} />
+          </>
+        )}
         {/* body */}
         <Path d={BODY} fill={ghost ? 'none' : theme.plastic} stroke={edge} strokeWidth={1.6} strokeDasharray={dash} />
         {!ghost && (
