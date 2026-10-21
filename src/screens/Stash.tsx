@@ -109,9 +109,18 @@ export default function StashScreen() {
       'decimal-pad'
     );
 
-  const headline = empty
-    ? 'Stash. Empty shelves for now.'
-    : `Stash. ${fmtVol(grandMl, unit)} in ${plural(totals.count, 'bag')}${days != null ? `, about ${days} ${days === 1 ? 'day' : 'days'}` : ''}.`;
+  // Milk entered in onboarding has no bags, so it is named on its own:
+  // "Stash. 37 oz: 2 bags and 30 from before." rather than "37 oz in 2 bags".
+  const before = settings.startingStashMl;
+  const daysPart = days != null ? `, about ${days} ${days === 1 ? 'day' : 'days'}` : '';
+  const headline =
+    empty && before <= 0
+      ? 'Stash. Empty shelves for now.'
+      : before <= 0
+        ? `Stash. ${fmtVol(grandMl, unit)} in ${plural(totals.count, 'bag')}${daysPart}.`
+        : totals.count === 0
+          ? `Stash. ${fmtVol(before, unit)} from before, no dated bags${daysPart}.`
+          : `Stash. ${fmtVol(grandMl, unit)}: ${plural(totals.count, 'bag')} and ${volNumber(before, unit)} from before${daysPart}.`;
 
   const drawBag = (b: Bag, w: number) => {
     const status = bagStatus(b, settings, today);

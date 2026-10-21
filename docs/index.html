@@ -3,63 +3,117 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pumping Tracker: Breast Milk. Pump timer, milk stash and next-pump reminders for iPhone</title>
-<meta name="description" content="Pumping Tracker is a simple breast pumping tracker for iPhone. Time each session, log left and right amounts, see today's ounces against your goal, get next-pump reminders from the start or the end of your last session, and keep your freezer milk stash in use-by order.">
+<title>Pumping Tracker: Breast Milk Log, Timer &amp; Freezer Stash for iPhone</title>
+<meta name="description" content="Pumping Tracker is an iPhone app for parents who pump breast milk. Time each session, log left and right amounts, get the next-pump reminder from the start or the end of your last session, and keep your freezer stash oldest first with use-by dates. Works offline.">
 <link rel="canonical" href="https://bkdigitalleads-cmyk.github.io/pumping/">
-<meta property="og:title" content="Pumping Tracker: Breast Milk">
-<meta property="og:description" content="A calm pumping tracker for iPhone: session timer, today's total, next-pump reminders your way, and a freezer stash in use-by order.">
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="author" content="Brian Kershner">
+<meta name="apple-itunes-app" content="app-id=6825142604">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Pumping Tracker">
+<meta property="og:title" content="Pumping Tracker: Breast Milk Log, Timer &amp; Freezer Stash">
+<meta property="og:description" content="Time each pumping session, log left and right, get the next-pump reminder from the start or the end of your last session, and keep your freezer stash oldest first.">
 <meta property="og:url" content="https://bkdigitalleads-cmyk.github.io/pumping/">
+<meta property="og:image" content="https://bkdigitalleads-cmyk.github.io/pumping/og-image.png">
+<meta property="og:image:alt" content="The Pumping Tracker app icon: a pump collection bottle with ounce marks, two thirds full of milk, on a clay background.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Pumping Tracker: Breast Milk Log, Timer &amp; Freezer Stash">
+<meta name="twitter:description" content="Time each pumping session, log left and right, get reminders from the start or the end of your last session, and keep your freezer stash oldest first.">
+<meta name="twitter:image" content="https://bkdigitalleads-cmyk.github.io/pumping/og-image.png">
+<meta name="twitter:image:alt" content="The Pumping Tracker app icon: a pump collection bottle with ounce marks, two thirds full of milk, on a clay background.">
 <link rel="stylesheet" href="style.css">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Pumping Tracker: Breast Milk","operatingSystem":"iOS","applicationCategory":"HealthApplication","description":"A breast pumping tracker for iPhone with a session timer, left and right amounts, daily totals, next-pump reminders counted from the start or the end of the last session, and a freezer milk stash in use-by order.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"url":"https://bkdigitalleads-cmyk.github.io/pumping/"}
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Pumping Tracker: Breast Milk",
+  "alternateName": "Pumping",
+  "operatingSystem": "iOS",
+  "applicationCategory": "HealthApplication",
+  "description": "An iPhone app for parents who pump breast milk: a session timer with left and right amounts, daily totals against a goal, next-pump reminders counted from the start or the end of the last session, a freezer milk stash in use-by order, and PDFs for a lactation consultant or caregiver. Works offline.",
+  "url": "https://bkdigitalleads-cmyk.github.io/pumping/",
+  "downloadUrl": "https://apps.apple.com/app/id6825142604",
+  "installUrl": "https://apps.apple.com/app/id6825142604",
+  "image": "https://bkdigitalleads-cmyk.github.io/pumping/icon-512.png",
+  "author": { "@type": "Person", "name": "Brian Kershner" },
+  "offers": [
+    { "@type": "Offer", "name": "Free download with in-app purchases", "price": "0", "priceCurrency": "USD" },
+    { "@type": "Offer", "name": "Pumping Pro, weekly (3 days free)", "price": "4.99", "priceCurrency": "USD" },
+    { "@type": "Offer", "name": "Pumping Pass, one-time", "price": "29.99", "priceCurrency": "USD" }
+  ]
+}
 </script>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
-{"@type":"Question","name":"Can the pumping reminder count from the end of my session?","acceptedAnswer":{"@type":"Answer","text":"Yes. In Pumping Tracker you choose whether the next-pump reminder counts from when your last session started or from when it ended, and you set the interval. You can switch any time in Settings."}},
-{"@type":"Question","name":"How do I keep track of my frozen breast milk stash?","acceptedAnswer":{"@type":"Answer","text":"Add each bag with its amount, the day you pumped it, and whether it is in the fridge, the freezer or a deep freezer. The app lines bags up oldest first with a use-by date on each, shows totals by location, and highlights the bag to use next."}},
-{"@type":"Question","name":"Can I share my pumping log with a lactation consultant?","acceptedAnswer":{"@type":"Answer","text":"With Pumping Pro you can share a supply log PDF with daily totals, sessions per day, averages and the left and right split for any range up to 90 days."}},
-{"@type":"Question","name":"Does the timer keep running if I leave the app?","acceptedAnswer":{"@type":"Answer","text":"Yes. The start time is saved the moment you tap Start pumping, so the timer is still right when you come back, even after a restart."}}
-]}
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "How do I track pumping sessions?", "acceptedAnswer": { "@type": "Answer", "text": "Tap Start pumping when you sit down. The timer starts right away and keeps the right time even if you lock the phone or switch apps. Tap the left and right sides of the screen to add half an ounce (or 10 mL) each, then tap Done. The session goes into today's total, and the next-pump countdown starts. If you forgot to log one, add a past session with its start time and length." } },
+    { "@type": "Question", "name": "How long does breast milk keep in the fridge, freezer and deep freezer?", "acceptedAnswer": { "@type": "Answer", "text": "The CDC's general guidance for freshly pumped milk is up to 4 hours at room temperature, up to 4 days in the fridge, and in the freezer within 6 months is best and up to 12 months is acceptable. The CDC gives one set of freezer times; Pumping Tracker starts a regular freezer at 6 months and a deep freezer at 12 months, and you can change all three. Thawed milk is good for up to 1 day in the fridge and should not be refrozen. This is general guidance, not medical advice." } },
+    { "@type": "Question", "name": "What is a milk stash and how do I rotate it oldest first?", "acceptedAnswer": { "@type": "Answer", "text": "A milk stash is the pumped milk you keep in the fridge and freezer for later, often for going back to work, daycare or a NICU stay. Rotating it oldest first means using the bag that will expire soonest before the newer ones, so less milk goes to waste. In Pumping Tracker you add each bag with its amount, pumped date and where it is stored, and the app lines them up by use-by date and marks the one to use next." } },
+    { "@type": "Question", "name": "Does the app work offline?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Everything you log is saved on your iPhone, so the timer, the reminders, the stash and the trends all work without a connection. Reminders are local notifications, scheduled on the phone." } },
+    { "@type": "Question", "name": "What does Pumping Pro cost?", "acceptedAnswer": { "@type": "Answer", "text": "The app is free for 3 sessions and up to 5 bags in the stash. Pumping Pro keeps every session, holds the whole stash, opens 30 and 90 days of trends, and makes the supply log and caregiver sheet PDFs. It is $4.99 a week with 3 days free, or $29.99 once for the Pumping Pass, which is yours to keep. Prices are in US dollars and can differ by country." } },
+    { "@type": "Question", "name": "Is my data private?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. There is no account to make. Sessions, bags and settings stay on your iPhone and are not sent to us or anyone else. The app has no ads, no analytics and no tracking. If you buy Pro, Apple handles the payment and RevenueCat confirms it with an anonymous id. The app never asks for your baby's name, birth date or photos." } },
+    { "@type": "Question", "name": "Why count the next pump from the end of a session?", "acceptedAnswer": { "@type": "Answer", "text": "Many pumping apps count the next reminder from when a session started. On a day when a session runs long, that cuts into your break. Counting from the end keeps the full gap you planned. Pumping Tracker lets you pick either one." } }
+  ]
+}
 </script>
 </head>
 <body>
 <div class="wrap">
-<a class="brand" href="./"><svg width="34" height="34" viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="230" fill="#A8503A"/><circle cx="512" cy="512" r="318" fill="none" stroke="#fff" stroke-opacity=".2" stroke-width="58"/><circle cx="512" cy="512" r="318" fill="none" stroke="#FCEBD6" stroke-width="58" stroke-linecap="round" stroke-dasharray="1439 4000" transform="rotate(-90 512 512)"/><g transform="translate(512 528) scale(19) translate(-12 -13)"><path d="M12 3.2C12 3.2 5.5 10.1 5.5 14.6A6.5 6.5 0 0 0 18.5 14.6C18.5 10.1 12 3.2 12 3.2Z" fill="#FFFBF4"/></g></svg> Pumping Tracker</a>
-<h1>The pumping tracker that times reminders your way</h1>
+<a class="brand" href="./"><img src="icon-512.png" width="34" height="34" alt="Pumping Tracker app icon, a pump bottle with ounce marks"> Pumping Tracker</a>
+<h1>Pumping Tracker: a breast milk log, timer and freezer stash for iPhone</h1>
 <p class="tag">Log a session with one thumb, see today's ounces at a glance, and keep your freezer stash in order. Your next-pump reminder counts from the start or the end of your last session, whichever fits how you pump.</p>
-<!-- TODO: once 1.0.0 is live, link to https://apps.apple.com/app/id6825142604 (it 404s until release). -->
-<a class="cta" href="#">Coming soon to the App Store</a>
-<p class="small">For iPhone. Free to start: 3 sessions and 5 bags, then Pumping Pro.</p>
+<a class="cta" href="https://apps.apple.com/app/id6825142604">Download on the App Store</a>
+<p class="small">For iPhone. Free for 3 sessions and 5 bags, then Pumping Pro.</p>
 
 <div class="cards">
   <div class="card"><b>Today at a glance</b>A bottle fills with today's total, with printed marks up to your goal.</div>
   <div class="card"><b>Reminders, your way</b>Count the interval from the start or the end of your last session. Switch any time.</div>
-  <div class="card"><b>One-thumb sessions</b>A timer that survives app switching, and big left and right buttons in half ounce or 10 mL steps.</div>
+  <div class="card"><b>One-thumb sessions</b>A timer that keeps time with the phone locked, and each side of the screen adds half an ounce or 10 mL.</div>
   <div class="card"><b>A stash you can trust</b>Bags oldest first with use-by dates, fridge and freezer totals, and the bag to use next.</div>
 </div>
 
 <h2>Built for real pumping days</h2>
-<p>Exclusive pumping, a NICU stay, or getting ready to go back to work: the hardest part is keeping it all in your head at 3am. Pumping Tracker keeps count so you don't have to. Tap Start pumping, tap the plus buttons for each side, and you're done. Night mode is true black with soft warm text, so it is easy on your eyes in a dark room.</p>
+<p>Exclusive pumping, a NICU stay, or getting ready to go back to work: the hard part is keeping it all in your head at 3am. Pumping Tracker keeps count. Tap Start pumping, tap each side as you go, and tap Done. Night mode is true black with soft warm text, so it is easy on your eyes in a dark room.</p>
+
+<h2>Reminders from the start or the end</h2>
+<p>Many pumping apps count the next reminder from when a session started, so a long session eats into your break. Counting from the end keeps the full gap you planned. Pumping Tracker lets you choose, and you can switch any time.</p>
 
 <h2>Your freezer stash, in order</h2>
-<p>Every bag gets a number, the day it was pumped, the amount and a use-by date from storage times you can edit (they start at 4 days in the fridge, 6 months in the freezer and 12 months in a deep freezer). A label card shows exactly what to write on the bag. Moving a bag to the fridge to thaw updates its use-by date.</p>
+<p>Every bag gets a number, the day it was pumped, the amount and a use-by date from storage times you can edit (they start at 4 days in the fridge, 6 months in the freezer and 12 months in a deep freezer). The app shows what to write on the bag. Moving a bag to the fridge to thaw updates its use-by date.</p>
 
 <h2>Share with your care team or caregiver</h2>
 <p>With Pumping Pro, make a supply log PDF for your lactation consultant or pediatrician, or a caregiver sheet for daycare, the NICU or a sitter, with bags in use-next order and simple thawing notes.</p>
 
 <h2>Questions</h2>
 <div class="faq">
-<b>Can the reminder count from the end of my session?</b>
-<p>Yes. You choose from the start or from the end, and the interval. Change it any time in Settings.</p>
-<b>Does the timer keep running if I leave the app?</b>
-<p>Yes. The start time is saved the moment you tap Start pumping.</p>
-<b>Ounces or milliliters?</b>
-<p>Either. Switch in Settings and everything converts.</p>
-<b>Is this medical advice?</b>
+<h3>How do I track pumping sessions?</h3>
+<p>Tap Start pumping when you sit down. The timer starts right away and keeps the right time even if you lock the phone or switch apps. Tap the left and right sides of the screen to add half an ounce (or 10 mL) each, then tap Done. The session goes into today's total, and the next-pump countdown starts. If you forgot to log one, add a past session with its start time and length.</p>
+
+<h3>How long does breast milk keep in the fridge, freezer and deep freezer?</h3>
+<p>The <a href="https://www.cdc.gov/breastfeeding/breast-milk-preparation-and-storage/handling-breastmilk.html">CDC's general guidance</a> for freshly pumped milk is up to 4 hours at room temperature, up to 4 days in the fridge, and in the freezer within 6 months is best and up to 12 months is acceptable. The CDC gives one set of freezer times; Pumping Tracker starts a regular freezer at 6 months and a deep freezer at 12 months, and you can change all three. Thawed milk is good for up to 1 day in the fridge and should not be refrozen. This is general guidance, not medical advice.</p>
+
+<h3>What is a milk stash and how do I rotate it oldest first?</h3>
+<p>A milk stash is the pumped milk you keep in the fridge and freezer for later, often for going back to work, daycare or a NICU stay. Rotating it oldest first means using the bag that will expire soonest before the newer ones, so less milk goes to waste. In Pumping Tracker you add each bag with its amount, pumped date and where it is stored, and the app lines them up by use-by date and marks the one to use next.</p>
+
+<h3>Does the app work offline?</h3>
+<p>Yes. Everything you log is saved on your iPhone, so the timer, the reminders, the stash and the trends all work without a connection. Reminders are local notifications, scheduled on the phone.</p>
+
+<h3>What does Pumping Pro cost?</h3>
+<p>The app is free for 3 sessions and up to 5 bags in the stash. Pumping Pro keeps every session, holds the whole stash, opens 30 and 90 days of trends, and makes the supply log and caregiver sheet PDFs. It is $4.99 a week with 3 days free, or $29.99 once for the Pumping Pass, which is yours to keep. Prices are in US dollars and can differ by country.</p>
+
+<h3>Is my data private?</h3>
+<p>Yes. There is no account to make. Sessions, bags and settings stay on your iPhone and are not sent to us or anyone else. The app has no ads, no analytics and no tracking. If you buy Pro, Apple handles the payment and RevenueCat confirms it with an anonymous id. The app never asks for your baby's name, birth date or photos. The <a href="privacy.html">privacy policy</a> has the details.</p>
+
+<h3>Why count the next pump from the end of a session?</h3>
+<p>Many pumping apps count the next reminder from when a session started. On a day when a session runs long, that cuts into your break. Counting from the end keeps the full gap you planned. Pumping Tracker lets you pick either one.</p>
+
+<h3>Is this medical advice?</h3>
 <p>No. Pumping Tracker is a personal log. Storage times are general guidance with a link to the CDC; follow your care team's advice for your baby.</p>
 </div>
-<footer><a href="./">Pumping Tracker</a><a href="support.html">Support</a><a href="privacy.html">Privacy</a><br>Made with care in NYC by Brian Kershner.</footer>
+<footer><a href="./">Pumping Tracker</a><a href="https://apps.apple.com/app/id6825142604">App Store</a><a href="support.html">Support</a><a href="privacy.html">Privacy</a><br>Made with care in NYC by Brian Kershner.</footer>
 </div>
 </body>
 </html>
