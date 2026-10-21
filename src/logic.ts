@@ -65,18 +65,23 @@ export function fromUnit(v: number, unit: Unit): number {
   return unit === 'oz' ? v * ML_PER_OZ : v;
 }
 
-/** The number shown for a volume: oz to 0.1, mL whole. */
+/**
+ * The number shown for a volume, the way a person says it: ounces to the
+ * nearest half ("4½", "½", "12"), milliliters whole ("130").
+ */
 export function volNumber(ml: number, unit: Unit): string {
   if (unit === 'ml') return String(Math.round(ml));
-  const v = Math.round(toUnit(ml, 'oz') * 10) / 10;
-  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+  const halves = Math.round(toUnit(ml, 'oz') * 2);
+  const whole = Math.floor(halves / 2);
+  if (halves % 2 === 0) return String(whole);
+  return whole === 0 ? '½' : `${whole}½`;
 }
 
 export function unitLabel(unit: Unit): string {
   return unit === 'oz' ? 'oz' : 'mL';
 }
 
-/** "4.5 oz", "130 mL". */
+/** "4½ oz", "130 mL". */
 export function fmtVol(ml: number, unit: Unit): string {
   return `${volNumber(ml, unit)} ${unitLabel(unit)}`;
 }
@@ -359,14 +364,11 @@ export function suggestedIntervalMin(pumpsPerDay: number): number {
 
 // ---------- formatting ----------
 
-/** "18 min", "1h 5m", "45 sec". */
+/** "18 min", "1 h 5 m", "45 sec". */
 export function fmtDuration(sec: number): string {
   const s = Math.max(0, Math.round(sec));
   if (s < 60) return `${s} sec`;
-  const m = Math.round(s / 60);
-  if (m < 60) return `${m} min`;
-  const h = Math.floor(m / 60);
-  return m % 60 === 0 ? `${h}h` : `${h}h ${m % 60}m`;
+  return fmtInterval(Math.round(s / 60));
 }
 
 /** Timer face: "08:12", "1:02:05". */
@@ -378,11 +380,11 @@ export function fmtClock(sec: number): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(r)}` : `${pad(m)}:${pad(r)}`;
 }
 
-/** Interval in minutes: "3h", "2h 45m", "45 min". */
+/** Interval in minutes: "3 h", "2 h 45 m", "45 min". */
 export function fmtInterval(min: number): string {
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);
-  return min % 60 === 0 ? `${h}h` : `${h}h ${min % 60}m`;
+  return min % 60 === 0 ? `${h} h` : `${h} h ${min % 60} m`;
 }
 
 /** Interval in words for a notification: "3 hours", "2 hours and 45 minutes". */
@@ -395,7 +397,7 @@ export function fmtIntervalWords(min: number): string {
   return m === 0 ? hs : `${hs} and ${ms}`;
 }
 
-/** Countdown: "1h 42m", "12 min", "under a minute". */
+/** Countdown: "1 h 42 m", "12 min", "under a minute". */
 export function fmtCountdown(ms: number): string {
   const min = Math.ceil(ms / 60_000);
   if (min <= 1) return 'under a minute';
@@ -436,9 +438,35 @@ export function sessionsCsv(sessions: Session[]): string {
 
 // ---------- display dates (en-US) ----------
 
-/** "6:40 AM" */
+/** "6:40 am" */
 export function fmtTime(ms: number): string {
-  return new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return `${fmtHm(ms)} ${fmtAmPm(ms)}`;
+}
+
+/** "6:40", the clock time the way people say it. */
+export function fmtHm(ms: number): string {
+  const d = new Date(ms);
+  return `${d.getHours() % 12 || 12}:${pad(d.getMinutes())}`;
+}
+
+export function fmtAmPm(ms: number): 'am' | 'pm' {
+  return new Date(ms).getHours() < 12 ? 'am' : 'pm';
+}
+
+/** "1 session", "3 sessions", "1 bag". */
+export function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? '' : 's'}`;
+}
+
+/** "Tuesday" */
+export function fmtWeekday(ms: number): string {
+  return new Date(ms).toLocaleDateString('en-US', { weekday: 'long' });
+}
+
+/** "10/20", the way a date goes on a bag. */
+export function fmtShortDate(iso: string): string {
+  const [, m, d] = iso.split('-').map(Number);
+  return `${m}/${d}`;
 }
 
 /** "Tue, Oct 20" */

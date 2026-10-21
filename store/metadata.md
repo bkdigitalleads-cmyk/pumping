@@ -7,18 +7,15 @@ Pumping Tracker: Milk Stash
 
 Home screen name (app.json `name`): Pumping
 
-## Subtitle (29/30)
-Milk Stash, Timer & Reminders
+## Subtitle (30/30)
+Breastfeeding Timer & Reminder
 
-## Keywords
+(Changed Oct 21, Brian approved. Was "Milk Stash, Timer & Reminders", which repeated "Milk Stash" from the name.)
 
-Brian's list is 114 characters, over Apple's 100 limit:
-`pump,breastfeeding,lactation,exclusive,supply,breastmilk,bag,frozen,storage,schedule,nicu,oz,session,expressed,mom`
+## Keywords (96/100)
+pump,lactation,exclusive,supply,breast,bag,frozen,storage,schedule,nicu,oz,session,expressed,mom
 
-Proposed (96/100), drops "session" (mostly searched as "pumping session", and "pumping" is in the title) and "expressed" (lowest volume of the list). Brian to confirm or pick two others:
-`pump,breastfeeding,lactation,exclusive,supply,breastmilk,bag,frozen,storage,schedule,nicu,oz,mom`
-
-Rules: no repeats of title or subtitle words (pumping, tracker, milk, stash, timer, reminders), never "pump log".
+(Brian approved, Oct 21.) Rules: no word from the name or subtitle (pumping, tracker, milk, stash, breastfeeding, timer, reminder), never "log" and never "pump log".
 
 ## Promotional text (154/170)
 Log a session in seconds, see today's ounces at a glance, and get your next-pump reminder counted from the start or the end. Your freezer stash, in order.
@@ -27,8 +24,8 @@ Log a session in seconds, see today's ounces at a glance, and get your next-pump
 Pumping Tracker is a calm, simple log for parents who pump: exclusive pumpers, NICU parents, and anyone heading back to work with a freezer stash to build.
 
 SEE WHERE YOUR DAY STANDS
-• A big ring fills with today's total against your daily goal
-• One tick for each planned pump, filled in as you go
+• A bottle on the home screen fills with today's total, with printed marks up to your daily goal
+• Left and right totals beside it, and the next pump as a plain line of type
 • Ounces or milliliters, your choice
 
 THE NEXT PUMP, TIMED YOUR WAY
@@ -58,7 +55,7 @@ SHARE WHEN YOU NEED TO (PRO)
 • CSV export of every session
 
 PUMPING PRO
-Start free with 3 sessions and up to 5 bags in your stash, and preview your supply log any time. Pumping Pro unlocks unlimited sessions, your whole stash, 30 and 90 day trends, both PDFs and CSV export. Choose a weekly subscription with a free trial, or the Pumping Pass, a one-time purchase that is yours to keep.
+Start free with 3 sessions and up to 5 bags in your stash, and preview your supply log any time. Pumping Pro keeps every session, holds your whole stash, opens 30 and 90 day trends, and makes both PDFs and the CSV. Choose a weekly subscription with a free trial, or the Pumping Pass, a one-time purchase that is yours to keep.
 
 Pumping Tracker is a personal log. It does not give medical advice. Storage times are general guidance; follow your care team's advice for your baby.
 
@@ -91,11 +88,11 @@ The app is free up to 3 logged sessions and 5 bags in the stash. After that, Sta
 The app does not give medical advice. Storage times are editable defaults with a link to the CDC's breast milk storage page.
 
 ## Screenshot plan (iPhone 6.9" and 6.5", light mode unless noted; Brian captures from a TestFlight build)
-1. Today with the ring two thirds full and the countdown card: "See your day at a glance"
-2. Settings reminder card with "From the start / From the end" and the worked example: "Reminders from the start or the end. Your call."
-3. Live session with the big timer and left and right steppers: "Log a session with one thumb"
-4. Stash with the totals card, location tiles and the USE NEXT bag: "Your freezer stash, oldest first"
-5. Label card ("Write this on the bag"): "Every bag labeled and dated"
-6. Trends 7 days with the left and right split: "Watch your supply over time"
+1. Today with the bottle two thirds full and "Next pump in 1 h 20 m": "See your day at a glance"
+2. Onboarding reminder screen with the start-or-end drawing: "Reminders from the start or the end. Your call."
+3. Live session with the big timer and the left and right halves: "Log a session with one thumb"
+4. Stash with bags on the fridge and freezer shelves and the "use next" tape: "Your freezer stash, oldest first"
+5. The masking-tape label ("Write this on the bag"): "Every bag labeled and dated"
+6. Trends 7 days with the left and right split: "Ounces by day, left and right"
 7. Supply log PDF (Pro, shared to Files): "A clean log for your lactation consultant"
 8. Today in night mode (dark): "Easy on the eyes at 3am"

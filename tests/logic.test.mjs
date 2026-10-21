@@ -170,11 +170,13 @@ test('reminder fire time: none when already due', () => {
 });
 
 test('volumes: oz and mL, stepper lands on the grid', () => {
-  assert.equal(L.fmtVol(L.fromUnit(4.5, 'oz'), 'oz'), '4.5 oz');
+  assert.equal(L.fmtVol(L.fromUnit(4.5, 'oz'), 'oz'), '4½ oz');
+  assert.equal(L.fmtVol(L.fromUnit(0.5, 'oz'), 'oz'), '½ oz');
+  assert.equal(L.fmtVol(L.fromUnit(3.1, 'oz'), 'oz'), '3 oz');
   assert.equal(L.fmtVol(L.fromUnit(12, 'oz'), 'oz'), '12 oz');
   assert.equal(L.fmtVol(133.4, 'ml'), '133 mL');
-  assert.equal(L.volNumber(L.stepVolume(0, 1, 'oz'), 'oz'), '0.5');
-  assert.equal(L.volNumber(L.stepVolume(L.fromUnit(2.3, 'oz'), 1, 'oz'), 'oz'), '2.5');
+  assert.equal(L.volNumber(L.stepVolume(0, 1, 'oz'), 'oz'), '½');
+  assert.equal(L.volNumber(L.stepVolume(L.fromUnit(2.3, 'oz'), 1, 'oz'), 'oz'), '2½');
   assert.equal(L.volNumber(L.stepVolume(L.fromUnit(2.3, 'oz'), -1, 'oz'), 'oz'), '2');
   assert.equal(L.volNumber(L.stepVolume(L.fromUnit(2.5, 'oz'), 1, 'oz'), 'oz'), '3');
   assert.equal(L.stepVolume(0, -1, 'oz'), 0);
@@ -191,10 +193,17 @@ test('formatting and CSV', () => {
   assert.equal(L.fmtClock(492), '08:12');
   assert.equal(L.fmtClock(3725), '1:02:05');
   assert.equal(L.fmtDuration(1080), '18 min');
-  assert.equal(L.fmtInterval(165), '2h 45m');
+  assert.equal(L.fmtDuration(3900), '1 h 5 m');
+  assert.equal(L.fmtInterval(165), '2 h 45 m');
+  assert.equal(L.fmtInterval(180), '3 h');
   assert.equal(L.fmtIntervalWords(165), '2 hours and 45 minutes');
   assert.equal(L.fmtIntervalWords(180), '3 hours');
-  assert.equal(L.fmtCountdown(102 * 60_000), '1h 42m');
+  assert.equal(L.fmtCountdown(102 * 60_000), '1 h 42 m');
+  assert.equal(L.fmtHm(at(2026, 10, 20, 14, 40)), '2:40');
+  assert.equal(L.fmtTime(at(2026, 10, 20, 0, 5)), '12:05 am');
+  assert.equal(L.plural(1, 'session'), '1 session');
+  assert.equal(L.plural(3, 'bag'), '3 bags');
+  assert.equal(L.fmtShortDate('2026-04-07'), '4/7');
   const csv = L.sessionsCsv([session({ note: 'said "hi"' })]).split('\r\n');
   assert.equal(csv.length, 2);
   assert.equal(csv[1], '2026-10-20 09:00,2026-10-20 09:20,20,60,70,130,2.03,2.37,4.40,"said ""hi"""');

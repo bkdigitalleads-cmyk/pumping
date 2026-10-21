@@ -1,30 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Linking,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, Linking, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
-import { useTheme, fonts } from '../theme';
-import { PillButton } from '../components';
-import Icon, { IconName } from '../icons';
-import { useApp, FREE_BAG_LIMIT, FREE_SESSION_LIMIT } from '../state';
-import {
-  getOffering,
-  purchasePackage,
-  restorePurchases,
-  isBillingAvailable,
-} from '../purchases';
+import { useTheme, fonts, radius, Theme } from '../theme';
+import Icon from '../icons';
+import { useApp, Focus, FREE_BAG_LIMIT, FREE_SESSION_LIMIT } from '../state';
+import { getOffering, purchasePackage, restorePurchases, isBillingAvailable } from '../purchases';
 import { getTrialEligibleIds, trialLabel } from '../trial';
 import { cancelTrialReminder, scheduleTrialReminderIfTrial } from '../reminder';
 import { maybeRequestReview } from '../reviews';
 import { TERMS_URL } from '../links';
+import MiniSheet from '../ui/MiniSheet';
+import { PillAction, Press, RoundButton } from '../ui/Press';
 
 /** On the first-launch paywall the close button appears after this delay. */
 const ONBOARDING_CLOSE_DELAY_MS = 3000;
@@ -36,6 +23,15 @@ function perWeek(pkg: PurchasesPackage | undefined): string {
   return pkg ? `${pkg.product.priceString}/week` : '';
 }
 
+/** One line that speaks to what the parent said matters most in onboarding. */
+const FOCUS_LINE: Record<Focus, string> = {
+  care: 'The caregiver sheet is ready to print for the daycare.',
+  stash: 'Every bag, oldest first, with use-by dates.',
+  supply: 'Your daily totals, side by side, for as far back as you need.',
+  drop: 'See what each dropped pump does to the day total.',
+  '': 'Every session and every bag, kept.',
+};
+
 /**
  * Two paywalls in one component (same pattern as Odo 1.0.6). Products:
  * pumping_pro_weekly ($rc_weekly, 3-day free trial) and pumping_pro_lifetime
@@ -43,13 +39,17 @@ function perWeek(pkg: PurchasesPackage | undefined): string {
  *  - onboarding: the first-launch paywall after the trial and reminder
  *    screens. Weekly is preselected, trial wording shows only when this Apple
  *    ID can get the trial, and the close button appears after 3 seconds.
- *  - in-app (session or bag limit, 30/90 days, PDFs, Pro buttons): the
+ *  - in-app (session or bag limit, 30/90 days, PDFs, Pro links): the
  *    Pumping Pass is preselected and listed first, and no trial is advertised.
  * While the Lifetime price is 0 (a launch offer) the free Lifetime leads.
+ *
+ * The hero is not a feature list: it is a small real copy of one of the Pro
+ * PDFs, with the parent's own numbers when there are any.
  */
 export default function PaywallModal({ privacyUrl, onboarding = false }: { privacyUrl: string; onboarding?: boolean }) {
   const theme = useTheme();
-  const { paywallVisible, hidePaywall, setIsPro } = useApp();
+  const insets = useSafeAreaInsets();
+  const { paywallVisible, hidePaywall, setIsPro, settings } = useApp();
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
   const [selected, setSelected] = useState<PurchasesPackage | null>(null);
   // Product ids whose free trial this Apple ID can still get (RevenueCat eligibility check).
@@ -58,15 +58,6 @@ export default function PaywallModal({ privacyUrl, onboarding = false }: { priva
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [canClose, setCanClose] = useState(!onboarding);
-
-  // Copy lever 1: the word "free" sits next to a feature.
-  const features: { icon: IconName; title: string; sub: string; free?: boolean }[] = [
-    { icon: 'clock', title: 'Next-pump reminders', sub: 'Counted from the start or the end of your last session.', free: true },
-    { icon: 'drop', title: 'Every session, kept', sub: `Free logs ${FREE_SESSION_LIMIT} sessions. Pro keeps them all.` },
-    { icon: 'snowflake', title: 'Your whole stash', sub: `Free holds ${FREE_BAG_LIMIT} bags. Pro holds the whole freezer, oldest first.` },
-    { icon: 'chart', title: '30 and 90 day trends', sub: 'Your daily totals over weeks, left and right.' },
-    { icon: 'doc', title: 'Supply log and caregiver sheet', sub: 'PDFs for your lactation consultant, daycare, NICU or sitter.' },
-  ];
 
   useEffect(() => {
     if (!paywallVisible || !onboarding) return;
@@ -108,20 +99,20 @@ export default function PaywallModal({ privacyUrl, onboarding = false }: { priva
       // Only does anything when this purchase started a free trial and notifications are allowed.
       const reminded = await scheduleTrialReminderIfTrial();
       Alert.alert(
-        'You\u2019re all set',
-        `Every session and every bag counts now.${
-          reminded ? ' We\u2019ll remind you 1 day before your trial ends.' : ''
+        'Pro is on',
+        `Every session and every bag is kept now.${
+          reminded ? ' We will remind you the day before the trial ends.' : ''
         }`,
         [{ text: 'OK', onPress: () => onboarding && maybeRequestReview('purchase') }]
       );
     } else if (res.ok) {
       // The store took the purchase but Pro isn't showing yet (it can lag).
       Alert.alert(
-        'Almost there',
-        'Your purchase went through but Pro isn\u2019t showing yet. Tap Restore purchases in a moment to turn it on.'
+        'Paid, but Pro is not showing',
+        'The App Store can lag a minute. Tap Restore purchases in a moment and it turns on.'
       );
     } else if (!res.userCancelled && res.error) {
-      Alert.alert('Purchase failed', res.error);
+      Alert.alert('The purchase did not go through', res.error);
     }
   };
 
@@ -134,11 +125,11 @@ export default function PaywallModal({ privacyUrl, onboarding = false }: { priva
     if (res.ok && res.isPro) {
       setIsPro(true);
       hidePaywall();
-      Alert.alert('Restored', 'Your Pro purchase is active again.');
+      Alert.alert('Pro is back on', 'Every session and bag is yours again.');
     } else if (res.ok) {
-      Alert.alert('No purchases found', 'We couldn\u2019t find a previous Pro purchase on this Apple ID.');
+      Alert.alert('Nothing to restore', 'This Apple ID has no Pumping Pro purchase.');
     } else {
-      Alert.alert('Restore failed', res.error ?? 'Please try again.');
+      Alert.alert('Restore did not work', res.error ?? 'Try once more.');
     }
   };
 
@@ -183,69 +174,42 @@ export default function PaywallModal({ privacyUrl, onboarding = false }: { priva
       : 'Pro is offered as a Weekly auto-renewing subscription or a one-time Lifetime purchase.') +
     ' Cancel anytime in your Apple ID settings.';
 
+  const sheetKind = settings.focus === 'care' || settings.focus === 'stash' ? 'caregiver' : 'supply';
+  const heroTrial = showTrial(weeklyTrial);
+  const headline = lifetimeFree
+    ? 'Pro is free right now.'
+    : heroTrial
+      ? `Keep all of it. ${heroTrial[0].toUpperCase()}${heroTrial.slice(1)} first.`
+      : 'Keep all of it.';
+
   return (
-    <Modal
-      visible={paywallVisible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={() => canClose && hidePaywall()}
-    >
+    <Modal visible={paywallVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => canClose && hidePaywall()}>
       <View style={[styles.container, { backgroundColor: theme.bg }]}>
         <ScrollView contentContainerStyle={styles.scroll}>
           {/* Holds its space while hidden so nothing jumps when the close button appears. */}
-          <Pressable
-            onPress={hidePaywall}
-            disabled={!canClose}
-            hitSlop={12}
-            style={[styles.close, { opacity: canClose ? 1 : 0 }]}
-            accessibilityLabel="Close"
-            accessibilityElementsHidden={!canClose}
-          >
-            <Icon name="close" size={22} color={theme.textFaint} />
-          </Pressable>
-
-          <Text style={[styles.title, { color: theme.text }]}>
-            Every ounce,{'\n'}counted and kept
-          </Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            {lifetimeFree
-              ? 'Launch offer: Pro is free right now. Get it once and keep it forever.'
-              : onboarding
-                ? `${showTrial(weeklyTrial) ? `Start with ${weeklyTrial}. ` : ''}Log every session, keep your freezer stash in order, and share a clean supply log when you need one.`
-                : `One ${PASS} covers your whole pumping journey. Every session, the whole stash and every PDF, yours to keep.`}
-          </Text>
-
-          <View style={styles.features}>
-            {features.map((f) => (
-              <View key={f.title} style={styles.feature}>
-                <View style={styles.featureIcon}>
-                  <Icon name={f.icon} size={22} color={theme.accent} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.featureTitleRow}>
-                    <Text style={[styles.featureTitle, { color: theme.text }]}>{f.title}</Text>
-                    {f.free && (
-                      <View style={[styles.freeTag, { backgroundColor: theme.accentSoft }]}>
-                        <Text style={[styles.freeTagText, { color: theme.accent }]}>FREE</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={[styles.featureSub, { color: theme.textSecondary }]}>{f.sub}</Text>
-                </View>
-              </View>
-            ))}
+          <View style={[styles.closeRow, { opacity: canClose ? 1 : 0 }]} accessibilityElementsHidden={!canClose}>
+            <RoundButton theme={theme} icon="close" label="Close" onPress={hidePaywall} disabled={!canClose} />
           </View>
+
+          <MiniSheet theme={theme} kind={sheetKind} unit={settings.unit} />
+
+          <Text style={[styles.title, { color: theme.ink }]} accessibilityRole="header">
+            {headline}
+          </Text>
+          <Text style={[styles.focus, { color: theme.inkSoft }]}>{FOCUS_LINE[settings.focus]}</Text>
+          <Text style={[styles.what, { color: theme.inkSoft }]}>
+            Pro keeps every session past the first {FREE_SESSION_LIMIT}, holds the whole freezer instead of {FREE_BAG_LIMIT} bags, opens 30 and 90 days of
+            trends, and makes the supply log and the caregiver sheet.
+          </Text>
 
           {loading ? (
             <ActivityIndicator style={{ marginVertical: 24 }} color={theme.accent} />
           ) : packages.length === 0 || !isBillingAvailable() ? (
-            <Text style={[styles.unavailable, { color: theme.textSecondary }]}>
-              Purchases aren’t available right now. Please try again later.
-            </Text>
+            <Text style={[styles.unavailable, { color: theme.inkSoft }]}>The App Store is not answering right now. Try again in a bit.</Text>
           ) : (
-            <View style={styles.packages}>
+            <View style={[styles.plans, { borderTopColor: theme.rule }]} accessibilityRole="radiogroup">
               {packages.map((p) => {
-                const active = selected?.identifier === p.identifier;
+                const on = selected?.identifier === p.identifier;
                 const isLifetime = p.packageType === 'LIFETIME';
                 const isWeekly = p.packageType === 'WEEKLY';
                 const title = isWeekly ? 'Weekly' : isLifetime ? PASS : p.product.title;
@@ -253,94 +217,65 @@ export default function PaywallModal({ privacyUrl, onboarding = false }: { priva
                 // 3.1.2(c) on the row itself: trial length, then the price after it.
                 const line = isWeekly
                   ? wTrial
-                    ? `${wTrial}, then ${p.product.priceString}/week`
-                    : `${p.product.priceString}/week`
+                    ? `${wTrial}, then ${p.product.priceString} a week`
+                    : `${p.product.priceString} a week${weeklyPerYear ? `, ${weeklyPerYear} if kept all year` : ''}`
                   : isLifetime
                     ? lifetimeFree
-                      ? 'Free right now, keep forever'
+                      ? 'Free right now, keep it for good'
                       : 'One-time, yours to keep'
                     : '';
-                const tag = lifetimeFree
-                  ? isLifetime && 'LAUNCH OFFER'
-                  : onboarding
-                    ? isWeekly && 'MOST POPULAR'
-                    : isLifetime && 'BEST VALUE';
                 return (
-                  <Pressable
+                  <Press
                     key={p.identifier}
                     onPress={() => setSelected(p)}
-                    style={[
-                      styles.pkg,
-                      {
-                        borderColor: active ? theme.accent : theme.border,
-                        backgroundColor: active ? theme.accentSoft : theme.card,
-                      },
-                    ]}
+                    style={[styles.plan, { borderBottomColor: theme.rule, backgroundColor: on ? theme.accentSoft : 'transparent' }]}
+                    pressedStyle={{ backgroundColor: theme.sunk }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
+                    accessibilityLabel={`${title}, ${line}, ${isLifetime && lifetimeFree ? 'free' : p.product.priceString}`}
                   >
+                    <Radio theme={theme} on={on} />
                     <View style={{ flex: 1 }}>
-                      <View style={styles.pkgTitleRow}>
-                        <Text style={[styles.pkgTitle, { color: theme.text }]}>{title}</Text>
-                        {tag ? (
-                          <View style={[styles.popular, { backgroundColor: theme.accent }]}>
-                            <Text style={[styles.popularText, { color: theme.onAccent }]}>{tag}</Text>
-                          </View>
-                        ) : null}
-                      </View>
-                      <Text style={[styles.pkgLine, { color: theme.accent }]}>
-                        {line}
-                      </Text>
-                      {isWeekly && weeklyPerYear && (
-                        <Text style={[styles.pkgEquiv, { color: theme.textFaint }]}>{weeklyPerYear} if kept all year</Text>
-                      )}
+                      <Text style={[styles.planTitle, { color: theme.ink }]}>{title}</Text>
+                      <Text style={[styles.planLine, { color: on ? theme.accent : theme.inkSoft }]}>{line}</Text>
                     </View>
-                    <Text style={[styles.pkgPrice, { color: theme.text }]}>
-                      {isLifetime && lifetimeFree ? 'Free' : p.product.priceString}
-                      <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
-                        {isWeekly ? '/wk' : ''}
-                      </Text>
-                    </Text>
-                  </Pressable>
+                    <Text style={[styles.planPrice, { color: theme.ink }]}>{isLifetime && lifetimeFree ? 'Free' : p.product.priceString}</Text>
+                  </Press>
                 );
               })}
-              {/* Copy lever 2: the button says Continue, never Subscribe. */}
-              <PillButton
-                theme={theme}
-                label={purchasing ? 'One moment…' : lifetimeFree && selected?.packageType === 'LIFETIME' ? 'Get Pro free' : 'Continue'}
-                onPress={buy}
-                disabled={purchasing || !selected}
-              />
-              {/* Copy lever 3: "No payment now" on trial tiers (onboarding, eligible only). */}
-              {selected?.packageType === 'LIFETIME' ? (
-                <CheckLine color={theme.success}>
-                  {lifetimeFree ? 'Free, no subscription, yours for good' : 'One-time purchase, no subscription'}
-                </CheckLine>
-              ) : selected && showTrial(trialLabel(selected, trialEligible)) ? (
-                <CheckLine color={theme.success}>No payment now</CheckLine>
-              ) : null}
             </View>
           )}
         </ScrollView>
 
-        {/*
-          App Review guideline 3.1.2(c): title, length, price and functional
-          Terms of Use (EULA) + Privacy Policy links live in the app itself.
-          Outside the ScrollView and outside the "offering loaded" branch on
-          purpose: visible without scrolling, rendered even with no products.
-        */}
-        <View style={[styles.legal, { borderTopColor: theme.border, backgroundColor: theme.bg }]}>
-          <Text style={[styles.legalText, { color: theme.textSecondary }]}>
-            Pumping Pro. {disclosure}
-          </Text>
+        <View style={[styles.bottom, { borderTopColor: theme.rule, paddingBottom: Math.max(insets.bottom, 14) }]}>
+          {/* The button says Continue, never Subscribe. */}
+          <PillAction
+            theme={theme}
+            tall
+            label={purchasing ? 'One moment' : lifetimeFree && selected?.packageType === 'LIFETIME' ? 'Get Pro free' : 'Continue'}
+            onPress={buy}
+            disabled={purchasing || !selected || loading}
+          />
+          {selected?.packageType === 'LIFETIME' ? (
+            <CheckLine color={theme.success}>{lifetimeFree ? 'Free, no subscription' : 'One payment, no subscription'}</CheckLine>
+          ) : selected && showTrial(trialLabel(selected, trialEligible)) ? (
+            <CheckLine color={theme.success}>No payment now</CheckLine>
+          ) : null}
+          {/*
+            App Review guideline 3.1.2(c): title, length, price and functional
+            Terms of Use (EULA) + Privacy Policy links live in the app itself.
+            Outside the ScrollView and outside the "offering loaded" branch on
+            purpose: visible without scrolling, rendered even with no products.
+          */}
+          <Text style={[styles.legalText, { color: theme.inkFaint }]}>Pumping Pro. {disclosure}</Text>
           <View style={styles.legalLinks}>
-            <Text style={[styles.legalLink, { color: theme.accent }]} onPress={onRestore}>
-              {restoring ? 'Restoring…' : 'Restore purchases'}
+            <Text style={[styles.legalLink, { color: theme.inkSoft }]} onPress={onRestore} accessibilityRole="button">
+              {restoring ? 'Restoring' : 'Restore purchases'}
             </Text>
-            <Text style={[styles.legalDot, { color: theme.textFaint }]}>·</Text>
-            <Text style={[styles.legalLink, { color: theme.accent }]} onPress={() => Linking.openURL(TERMS_URL)}>
+            <Text style={[styles.legalLink, { color: theme.inkSoft }]} onPress={() => Linking.openURL(TERMS_URL)} accessibilityRole="link">
               Terms of Use (EULA)
             </Text>
-            <Text style={[styles.legalDot, { color: theme.textFaint }]}>·</Text>
-            <Text style={[styles.legalLink, { color: theme.accent }]} onPress={() => Linking.openURL(privacyUrl)}>
+            <Text style={[styles.legalLink, { color: theme.inkSoft }]} onPress={() => Linking.openURL(privacyUrl)} accessibilityRole="link">
               Privacy Policy
             </Text>
           </View>
@@ -350,44 +285,42 @@ export default function PaywallModal({ privacyUrl, onboarding = false }: { priva
   );
 }
 
+function Radio({ theme, on }: { theme: Theme; on: boolean }) {
+  return (
+    <View style={[styles.radio, { borderColor: on ? theme.accent : theme.inkFaint }]}>
+      {on && <View style={[styles.radioDot, { backgroundColor: theme.accent }]} />}
+    </View>
+  );
+}
+
 function CheckLine({ color, children }: { color: string; children: React.ReactNode }) {
   return (
     <View style={styles.checkLine}>
       <Icon name="check" size={15} color={color} strokeWidth={2.5} />
-      <Text style={[styles.noPayment, { color }]}>{children}</Text>
+      <Text style={[styles.checkText, { color }]}>{children}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 24, paddingTop: 20, paddingBottom: 40 },
-  close: { alignSelf: 'flex-end', padding: 4 },
-  title: { fontSize: 30, fontFamily: fonts.display, lineHeight: 34, marginTop: 8 },
-  subtitle: { fontSize: 16, lineHeight: 23, marginTop: 8, marginBottom: 22 },
-  features: { gap: 14, marginBottom: 24 },
-  feature: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  featureIcon: { width: 24, paddingTop: 1 },
-  featureTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  featureTitle: { fontSize: 16, fontWeight: fonts.weight.semibold },
-  featureSub: { fontSize: 14, lineHeight: 20, marginTop: 2 },
-  freeTag: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  freeTagText: { fontSize: 10, fontWeight: fonts.weight.bold, letterSpacing: 0.5 },
-  packages: { gap: 12 },
-  pkg: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 14, padding: 16 },
-  pkgTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  pkgTitle: { fontSize: 16, fontWeight: fonts.weight.semibold },
-  popular: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  popularText: { fontSize: 9, fontWeight: fonts.weight.bold, letterSpacing: 0.5 },
-  pkgLine: { fontSize: 12, fontWeight: fonts.weight.semibold, marginTop: 3 },
-  pkgEquiv: { fontSize: 11, marginTop: 2 },
-  pkgPrice: { fontSize: 18, fontFamily: fonts.display, marginLeft: 10 },
-  unavailable: { textAlign: 'center', marginVertical: 24, fontSize: 15 },
+  scroll: { paddingBottom: 24 },
+  closeRow: { alignItems: 'flex-end', paddingHorizontal: 14, paddingTop: 12 },
+  title: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, marginTop: 22, paddingHorizontal: 20 },
+  focus: { fontFamily: fonts.soft, fontSize: 18, lineHeight: 25, marginTop: 6, paddingHorizontal: 20 },
+  what: { fontSize: 15, lineHeight: 22, marginTop: 10, paddingHorizontal: 20 },
+  plans: { marginTop: 22, borderTopWidth: StyleSheet.hairlineWidth },
+  plan: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 72, paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  planTitle: { fontFamily: fonts.heading, fontSize: 19 },
+  planLine: { fontSize: 14, marginTop: 2, fontWeight: '600' },
+  planPrice: { fontFamily: fonts.display, fontSize: 20 },
+  radio: { width: 24, height: 24, borderRadius: radius.pill, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  radioDot: { width: 12, height: 12, borderRadius: radius.pill },
+  unavailable: { textAlign: 'center', marginVertical: 24, fontSize: 15, paddingHorizontal: 20 },
+  bottom: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 12, gap: 8 },
   checkLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  noPayment: { fontSize: 13, textAlign: 'center', fontWeight: fonts.weight.semibold },
-  legal: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 26, gap: 6 },
+  checkText: { fontSize: 14, fontWeight: '600' },
   legalText: { fontSize: 11, lineHeight: 15, textAlign: 'center' },
-  legalLinks: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 6 },
-  legalLink: { fontSize: 12, fontWeight: fonts.weight.semibold, textDecorationLine: 'underline' },
-  legalDot: { fontSize: 12 },
+  legalLinks: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 14 },
+  legalLink: { fontSize: 12, fontWeight: '600', textDecorationLine: 'underline', paddingVertical: 4 },
 });

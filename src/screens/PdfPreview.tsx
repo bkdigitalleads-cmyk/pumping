@@ -14,7 +14,8 @@ import { fmtDate, fmtDay, fmtVol } from '../logic';
  * approach as Odo 1.0.6.
  */
 
-// Paper colors, the same in light and dark mode, like the printed PDF.
+// Paper colors, like the printed PDF. At night the whole page is dimmed, so
+// it is never brighter than the cream text around it.
 const PAPER = {
   bg: '#FFFDF8',
   ink: '#33241D',
@@ -52,22 +53,22 @@ export default function PdfPreview({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.container, { backgroundColor: theme.cardAlt }]}>
-        <View style={[styles.header, { borderBottomColor: theme.border, backgroundColor: theme.bg }]}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Preview</Text>
+      <View style={[styles.container, { backgroundColor: theme.sunk }]}>
+        <View style={[styles.header, { borderBottomColor: theme.rule, backgroundColor: theme.bg }]}>
+          <Text style={[styles.headerTitle, { color: theme.ink }]}>Preview</Text>
           <Pressable onPress={onClose} hitSlop={12} accessibilityLabel="Close preview">
-            <Icon name="close" color={theme.textFaint} />
+            <Icon name="close" color={theme.inkFaint} />
           </Pressable>
         </View>
-        <Text style={[styles.note, { color: theme.textSecondary }]}>
-          This is a preview of your supply log. Pumping Pro shares or prints the real thing.
+        <Text style={[styles.note, { color: theme.inkSoft }]}>
+          Your supply log, with your own numbers. Pumping Pro shares or prints the clean copy.
         </Text>
 
         <ScrollView contentContainerStyle={styles.scroll}>
           {!data ? (
             <ActivityIndicator color={theme.accent} style={{ marginTop: 40 }} />
           ) : (
-            <View style={styles.page}>
+            <View style={[styles.page, theme.isDark && { opacity: 0.7 }]}>
               <Sheet d={data} />
               <View style={styles.watermarkLayer} pointerEvents="none">
                 {[0, 1, 2].map((i) => (
@@ -81,7 +82,7 @@ export default function PdfPreview({
         </ScrollView>
 
         <View
-          style={[styles.bar, { borderTopColor: theme.border, backgroundColor: theme.bg, paddingBottom: Math.max(insets.bottom, 16) }]}
+          style={[styles.bar, { borderTopColor: theme.rule, backgroundColor: theme.bg, paddingBottom: Math.max(insets.bottom, 16) }]}
         >
           <BarButton label="Share" icon="share" onPress={onLocked} />
           <BarButton label="Print" icon="doc" onPress={onLocked} />
@@ -155,7 +156,7 @@ function Sheet({ d }: { d: SupplyData }) {
         <Text style={[styles.td, styles.cNum, styles.bold]}>{v(s.totalMl)}</Text>
       </View>
       <Text style={[styles.small, { marginTop: 14, textAlign: 'center' }]}>
-        A personal log recorded by the parent. Not a medical record or medical advice.
+        A personal log kept by the parent. Not a medical record or medical advice.
       </Text>
     </View>
   );
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 32 },
   page: {
     backgroundColor: PAPER.bg,
-    borderRadius: 8,
+    borderRadius: 2,
     padding: 18,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -227,8 +228,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     borderWidth: 1.5,
-    borderRadius: 26,
-    minHeight: 50,
+    borderRadius: 999,
+    minHeight: 52,
   },
   barBtnText: { fontSize: 16, fontWeight: '600' },
   proTag: { borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1 },

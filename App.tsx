@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useFonts } from 'expo-font';
 import { useTheme, fonts, FONT_FILES } from './src/theme';
 import Icon, { IconName } from './src/icons';
@@ -16,6 +17,7 @@ import PaywallModal from './src/screens/Paywall';
 import Onboarding from './src/screens/Onboarding';
 import Welcome, { TrialSteps } from './src/screens/Welcome';
 import { maybeRequestReviewOnLaunch } from './src/reviews';
+import { softTap } from './src/ui/motion';
 import { PRIVACY_URL } from './src/links';
 
 type Tab = 'today' | 'stash' | 'trends' | 'settings';
@@ -30,7 +32,7 @@ const TABS: { key: Tab; label: string; icon: IconName }[] = [
 function Shell() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { ready, isPro, showPaywall, paywallVisible, active, startSession } = useApp();
+  const { ready, isPro, showPaywall, paywallVisible, active, startSession, notice } = useApp();
   const [tab, setTab] = useState<Tab>('today');
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
   // New installs: value screens, setup questions, trial and reminder screens, then the paywall.
@@ -67,6 +69,32 @@ function Shell() {
   useEffect(() => {
     if (paywallOpened.current && !paywallVisible && onboarded === false) finishOnboarding();
   }, [paywallVisible, onboarded]);
+
+  // The screen stays awake while a session runs, on Today as well as in the session itself.
+  const running = active != null;
+  // A gentle tap at 15 and 20 minutes into a session, once each, for anyone timing by feel.
+  const startedAt = active?.startedAt ?? 0;
+  useEffect(() => {
+    if (!startedAt) return;
+    const done = new Set<number>();
+    const t = setInterval(() => {
+      const min = (Date.now() - startedAt) / 60_000;
+      for (const m of [15, 20]) {
+        if (min >= m && min < m + 0.5 && !done.has(m)) {
+          done.add(m);
+          softTap();
+        }
+      }
+    }, 2000);
+    return () => clearInterval(t);
+  }, [startedAt]);
+  useEffect(() => {
+    if (!running) return;
+    activateKeepAwakeAsync('session').catch(() => {});
+    return () => {
+      deactivateKeepAwake('session').catch(() => {});
+    };
+  }, [running]);
 
   /** New sessions stop at the free limit; a session already running can always be finished. */
   const canLogNew = async () => isPro || (await countSessions()) < FREE_SESSION_LIMIT;
@@ -118,12 +146,12 @@ function Shell() {
           {tab === 'trends' && <TrendsScreen onOpenSession={onOpenSession} />}
           {tab === 'settings' && <SettingsScreen />}
         </View>
-        <View
-          style={[
-            styles.tabBar,
-            { backgroundColor: theme.card, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom, 10) },
-          ]}
-        >
+        {notice && (
+          <View style={[styles.notice, { backgroundColor: theme.ink }]} accessibilityLiveRegion="polite" accessibilityRole="alert">
+            <Text style={[styles.noticeText, { color: theme.bg }]}>{notice}</Text>
+          </View>
+        )}
+        <View style={[styles.tabBar, { backgroundColor: theme.bg, borderTopColor: theme.rule, paddingBottom: Math.max(insets.bottom, 8) }]}>
           {TABS.map((t) => {
             const on = tab === t.key;
             return (
@@ -135,8 +163,11 @@ function Shell() {
                 accessibilityState={{ selected: on }}
                 accessibilityLabel={t.label}
               >
-                <Icon name={t.icon} size={25} color={on ? theme.accent : theme.textFaint} strokeWidth={on ? 2.2 : 1.8} />
-                <Text style={[styles.tabLabel, { color: on ? theme.accent : theme.textFaint }]}>{t.label}</Text>
+                <Icon name={t.icon} size={24} color={on ? theme.ink : theme.inkFaint} strokeWidth={on ? 2.2 : 1.7} />
+                <Text style={[styles.tabLabel, { color: on ? theme.ink : theme.inkFaint }]} maxFontSizeMultiplier={1.3}>
+                  {t.label}
+                </Text>
+                <View style={[styles.tabMark, { backgroundColor: on ? theme.accent : 'transparent' }]} />
               </Pressable>
             );
           })}
@@ -175,7 +206,11 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  // Square-edged, like the lists: a hairline on top and a short accent bar under the open tab.
   tabBar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8 },
-  tabItem: { flex: 1, alignItems: 'center', gap: 3, minHeight: 48, justifyContent: 'center' },
-  tabLabel: { fontSize: 11, fontWeight: fonts.weight.semibold },
+  tabItem: { flex: 1, alignItems: 'center', gap: 3, minHeight: 50, justifyContent: 'center' },
+  tabLabel: { fontSize: 11, fontWeight: fonts.weight.semibold, letterSpacing: 0.3 },
+  tabMark: { width: 18, height: 2, marginTop: 2 },
+  notice: { paddingHorizontal: 20, paddingVertical: 14 },
+  noticeText: { fontSize: 16, fontWeight: fonts.weight.semibold, lineHeight: 21 },
 });

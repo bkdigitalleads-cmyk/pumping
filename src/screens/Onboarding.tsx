@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, fonts, Theme } from '../theme';
-import { IconTile, PillButton, Segmented, Stepper } from '../components';
-import { IconName } from '../icons';
+import Icon, { IconName } from '../icons';
+import Bottle from '../ui/Bottle';
+import ReminderDiagram from '../ui/ReminderDiagram';
+import { Nudge, Tabs } from '../ui/List';
+import { PillAction, Press, TextAction } from '../ui/Press';
 import { useApp, Focus } from '../state';
 import { kvSet } from '../db';
 import { requestReminderPermission } from '../reminder';
@@ -25,9 +29,9 @@ export const SOURCE_KEY = 'onboarding.source';
 const SOURCES = ['App Store search', 'TikTok or Instagram', 'A friend or another parent', 'Hospital, NICU or lactation consultant', 'Somewhere else'];
 
 const FOCUS: { value: Exclude<Focus, ''>; label: string; sub: string; icon: IconName }[] = [
-  { value: 'stash', label: 'Building a freezer stash', sub: 'For back to work, or just peace of mind', icon: 'snowflake' },
-  { value: 'supply', label: 'Tracking my supply', sub: 'Day by day, and side by side', icon: 'chart' },
-  { value: 'drop', label: 'Dropping a pump', sub: 'Spacing sessions out, one at a time', icon: 'clock' },
+  { value: 'stash', label: 'Building a freezer stash', sub: 'Back to work soon, or just want a cushion', icon: 'snowflake' },
+  { value: 'supply', label: 'Tracking my supply', sub: 'Ounces by day, and by side', icon: 'chart' },
+  { value: 'drop', label: 'Dropping a pump', sub: 'Stretching the gaps, one session at a time', icon: 'clock' },
   { value: 'care', label: 'NICU or daycare', sub: 'Milk that someone else will feed', icon: 'heart' },
 ];
 
@@ -72,7 +76,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
   const saveStash = () => {
     const v = parseVolume(stashText, unit);
     if (stashText.trim() && v == null) {
-      setStashError('Numbers only, like 40 or 40.5.');
+      setStashError('Just the number, like 40 or 40.5.');
       return;
     }
     if (v) updateSettings({ startingStashMl: v }).catch(() => {});
@@ -86,12 +90,12 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
 
   if (step === 'focus') {
     return (
-      <Page theme={theme} icon="heart" title="What matters most right now?" body="We will set things up around it. You can change everything later.">
-        <View style={styles.choices}>
+      <Page theme={theme} title="What matters most right now?" line="It changes a few words here and there. Everything can change later.">
+        <List theme={theme}>
           {FOCUS.map((f) => (
             <Choice key={f.value} theme={theme} label={f.label} sub={f.sub} icon={f.icon} onPress={() => pickFocus(f.value)} />
           ))}
-        </View>
+        </List>
       </Page>
     );
   }
@@ -102,28 +106,34 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
     return (
       <Page
         theme={theme}
-        icon="drop"
-        title={settings.focus === 'drop' ? 'Where are you starting from?' : 'Your daily plan'}
-        body="Your pumps a day and a daily goal. Pick what feels doable; there is no wrong number here."
-        footer={<PillButton theme={theme} big label="Continue" onPress={savePlan} />}
+        title={settings.focus === 'drop' ? 'Where are you starting from?' : 'How many pumps, and how much?'}
+        line="A rough number is fine. No one is grading this."
+        footer={<PillAction theme={theme} tall label="Continue" onPress={savePlan} />}
       >
-        <Segmented
-          theme={theme}
-          value={unit}
-          onChange={setUnit}
-          options={[
-            { value: 'oz', label: 'Ounces' },
-            { value: 'ml', label: 'Milliliters' },
-          ]}
-        />
-        <View style={[styles.box, { backgroundColor: theme.card, borderColor: theme.border }]}>
-          <Stepper theme={theme} size="small" label="Pumps a day" valueText={String(pumps)} onStep={(d) => setPumps((p) => Math.min(16, Math.max(1, p + d)))} />
-          <View style={[styles.rule, { backgroundColor: theme.border }]} />
-          <Stepper
+        <View style={styles.planRow}>
+          <Bottle theme={theme} totalMl={0} goalMl={goalMl} unit={unit} height={170} />
+          <Text style={[styles.projection, { color: theme.ink }]}>
+            {pumps} {pumps === 1 ? 'pump' : 'pumps'} at about {fmtVol(perPump, unit)} each gets you to {fmtVol(goalMl, unit)}. Around{' '}
+            {fmtVol(goalMl * 7, unit)} a week.
+          </Text>
+        </View>
+        <View style={{ paddingVertical: 8 }}>
+          <Tabs
             theme={theme}
-            size="small"
+            value={unit}
+            onChange={setUnit}
+            options={[
+              { value: 'oz', label: 'Ounces' },
+              { value: 'ml', label: 'Milliliters' },
+            ]}
+          />
+        </View>
+        <List theme={theme}>
+          <Nudge theme={theme} label="Pumps a day" value={String(pumps)} onStep={(d) => setPumps((p) => Math.min(16, Math.max(1, p + d)))} />
+          <Nudge
+            theme={theme}
             label="Daily goal"
-            valueText={volNumber(goalMl, unit)}
+            value={volNumber(goalMl, unit)}
             unit={unitLabel(unit)}
             onStep={(d) =>
               setGoalMl((g) => {
@@ -136,11 +146,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
               if (v != null && v > 0) setGoalMl(v);
             }}
           />
-        </View>
-        <Text style={[styles.projection, { color: theme.text }]}>
-          {pumps} {pumps === 1 ? 'pump' : 'pumps'} a day at about {fmtVol(perPump, unit)} each reaches {fmtVol(goalMl, unit)}. That is about{' '}
-          {fmtVol(goalMl * 7, unit)} a week.
-        </Text>
+        </List>
       </Page>
     );
   }
@@ -149,43 +155,33 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
     return (
       <Page
         theme={theme}
-        icon="bell"
-        title="When should we nudge you?"
-        body="Count the time to your next pump from when your last session started, or from when it ended."
+        title="Count from the start or the end?"
         footer={
           asking ? null : (
-            <View style={{ gap: 10 }}>
-              <PillButton theme={theme} big label="Turn on reminders" onPress={() => saveRemind(true)} />
-              <Pressable onPress={() => saveRemind(false)} hitSlop={8} style={styles.skip}>
-                <Text style={[styles.skipText, { color: theme.textSecondary }]}>Not now</Text>
-              </Pressable>
+            <View style={{ gap: 4 }}>
+              <PillAction theme={theme} tall label="Turn on reminders" onPress={() => saveRemind(true)} />
+              <TextAction theme={theme} label="Not now" onPress={() => saveRemind(false)} color={theme.inkSoft} align="center" />
             </View>
           )
         }
       >
-        <Segmented
-          theme={theme}
-          value={anchor}
-          onChange={setAnchor}
-          options={[
-            { value: 'start', label: 'From the start' },
-            { value: 'end', label: 'From the end' },
-          ]}
-        />
-        <View style={[styles.box, { backgroundColor: theme.card, borderColor: theme.border }]}>
-          <Stepper
+        <View style={{ paddingHorizontal: 20 }}>
+          <ReminderDiagram theme={theme} intervalMin={interval} anchor={anchor} />
+        </View>
+        <View style={{ paddingVertical: 8 }}>
+          <Tabs
             theme={theme}
-            size="small"
-            label="Every"
-            valueText={fmtInterval(interval)}
-            onStep={(d) => setIntervalMin((i) => Math.min(720, Math.max(30, i + d * 15)))}
+            value={anchor}
+            onChange={setAnchor}
+            options={[
+              { value: 'start', label: 'From the start' },
+              { value: 'end', label: 'From the end' },
+            ]}
           />
         </View>
-        <Text style={[styles.projection, { color: theme.text }]}>
-          {anchor === 'start'
-            ? `Start at 9:00, and the next reminder comes ${fmtInterval(interval)} later, however long you pump.`
-            : `Finish at 9:20, and the next reminder comes ${fmtInterval(interval)} after that.`}
-        </Text>
+        <List theme={theme}>
+          <Nudge theme={theme} label="Every" value={fmtInterval(interval)} onStep={(d) => setIntervalMin((i) => Math.min(720, Math.max(30, i + d * 15)))} />
+        </List>
       </Page>
     );
   }
@@ -195,36 +191,33 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Page
           theme={theme}
-          icon="snowflake"
-          title="Any milk stored already?"
-          body={`Add the rough total in ${unit === 'oz' ? 'ounces' : 'milliliters'}. You can add dated bags later, one by one.`}
+          title="Milk in the freezer already?"
+          line="A rough total is fine. Dated bags can come later, one at a time."
           footer={
-            <View style={{ gap: 10 }}>
-              <PillButton theme={theme} big label="Save and continue" onPress={saveStash} />
-              <Pressable onPress={() => setStep('source')} hitSlop={8} style={styles.skip}>
-                <Text style={[styles.skipText, { color: theme.textSecondary }]}>Skip for now</Text>
-              </Pressable>
+            <View style={{ gap: 4 }}>
+              <PillAction theme={theme} tall label="Save and continue" onPress={saveStash} />
+              <TextAction theme={theme} label="Skip for now" onPress={() => setStep('source')} color={theme.inkSoft} align="center" />
             </View>
           }
         >
-          <View style={styles.stashRow}>
+          <View style={[styles.stashRow, { borderBottomColor: stashError ? theme.danger : theme.accent }]}>
             <TextInput
-              style={[styles.stashInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
+              style={[styles.stashInput, { color: theme.ink }]}
               value={stashText}
               onChangeText={(t) => {
                 setStashText(t);
                 setStashError('');
               }}
               placeholder="0"
-              placeholderTextColor={theme.textFaint}
+              placeholderTextColor={theme.inkFaint}
               keyboardType="decimal-pad"
               maxLength={6}
               accessibilityLabel={`Stored milk in ${unitLabel(unit)}`}
             />
-            <Text style={[styles.stashUnit, { color: theme.textSecondary }]}>{unitLabel(unit)}</Text>
+            <Text style={[styles.stashUnit, { color: theme.inkSoft }]}>{unitLabel(unit)}</Text>
           </View>
-          <Text style={[styles.hint, { color: stashError ? theme.danger : theme.textFaint }]}>
-            {stashError || 'Optional. Leave it empty if you are just starting out.'}
+          <Text style={[styles.hint, { color: stashError ? theme.danger : theme.inkFaint }]}>
+            {stashError || 'Leave it empty if the freezer is empty.'}
           </Text>
         </Page>
       </KeyboardAvoidingView>
@@ -232,76 +225,80 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <Page theme={theme} icon="question" title="Where did you hear about us?" body="One tap. It helps us make the app better.">
-      <View style={styles.choices}>
+    <Page theme={theme} title="Where did you hear about us?" line="One tap. It helps more than you would think.">
+      <List theme={theme}>
         {SOURCES.map((s) => (
           <Choice key={s} theme={theme} label={s} onPress={() => pickSource(s)} />
         ))}
-      </View>
+      </List>
     </Page>
   );
 }
 
 function Page({
   theme,
-  icon,
   title,
-  body,
+  line,
   children,
   footer,
 }: {
   theme: Theme;
-  icon: IconName;
   title: string;
-  body: string;
+  line?: string;
   children?: React.ReactNode;
   footer?: React.ReactNode;
 }) {
+  const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <IconTile theme={theme} icon={icon} />
-        <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
-        <Text style={[styles.body, { color: theme.textSecondary }]}>{body}</Text>
-        <View style={{ marginTop: 24, gap: 16 }}>{children}</View>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+        <Text style={[styles.title, { color: theme.ink }]} accessibilityRole="header">
+          {title}
+        </Text>
+        {line ? <Text style={[styles.line, { color: theme.inkSoft }]}>{line}</Text> : null}
+        <View style={{ marginTop: 22, gap: 12 }}>{children}</View>
       </ScrollView>
-      {footer ? <View style={styles.footer}>{footer}</View> : null}
+      {footer ? <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>{footer}</View> : null}
     </View>
   );
 }
 
+/** Square-edged, full-bleed list with hairlines. */
+function List({ theme, children }: { theme: Theme; children: React.ReactNode }) {
+  return <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.rule }}>{children}</View>;
+}
+
 function Choice({ theme, label, sub, icon, onPress }: { theme: Theme; label: string; sub?: string; icon?: IconName; onPress: () => void }) {
   return (
-    <Pressable
+    <Press
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => [styles.choice, { backgroundColor: pressed ? theme.accentSoft : theme.card, borderColor: theme.border }]}
+      accessibilityLabel={sub ? `${label}. ${sub}` : label}
+      style={[styles.choice, { borderBottomColor: theme.rule }]}
+      pressedStyle={{ backgroundColor: theme.accentSoft }}
     >
-      {icon && <IconTile theme={theme} icon={icon} size={44} />}
+      {icon && <Icon name={icon} size={24} color={theme.accent} />}
       <View style={{ flex: 1 }}>
-        <Text style={[styles.choiceText, { color: theme.text }]}>{label}</Text>
-        {sub ? <Text style={[styles.choiceSub, { color: theme.textFaint }]}>{sub}</Text> : null}
+        <Text style={[styles.choiceText, { color: theme.ink }]}>{label}</Text>
+        {sub ? <Text style={[styles.choiceSub, { color: theme.inkFaint }]}>{sub}</Text> : null}
       </View>
-    </Pressable>
+      <Icon name="chevronRight" size={16} color={theme.inkFaint} />
+    </Press>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingHorizontal: 28, paddingTop: 40, paddingBottom: 30 },
-  title: { fontSize: 32, lineHeight: 38, fontFamily: fonts.display, marginTop: 20 },
-  body: { fontSize: 17, lineHeight: 24, marginTop: 10 },
-  choices: { gap: 12 },
-  choice: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 20, borderWidth: 1, paddingVertical: 14, paddingHorizontal: 16, minHeight: 64 },
+  scroll: { paddingTop: 40, paddingBottom: 30 },
+  title: { fontSize: 32, lineHeight: 38, fontFamily: fonts.display, paddingHorizontal: 24 },
+  line: { fontSize: 17, lineHeight: 24, marginTop: 10, paddingHorizontal: 24 },
+  choice: { flexDirection: 'row', alignItems: 'center', gap: 16, minHeight: 66, paddingHorizontal: 24, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   choiceText: { fontSize: 17, fontWeight: fonts.weight.semibold },
   choiceSub: { fontSize: 14, marginTop: 2 },
-  box: { borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, paddingVertical: 18, gap: 16 },
-  rule: { height: StyleSheet.hairlineWidth, marginHorizontal: 20 },
-  projection: { fontFamily: fonts.soft, fontSize: 18, lineHeight: 26 },
-  footer: { paddingHorizontal: 24, paddingBottom: 20, paddingTop: 8 },
-  skip: { alignSelf: 'center', minHeight: 44, justifyContent: 'center' },
-  skipText: { fontSize: 16, fontWeight: fonts.weight.semibold },
-  stashRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  stashInput: { flex: 1, borderWidth: 1, borderRadius: 18, paddingHorizontal: 18, paddingVertical: 14, fontSize: 34, fontFamily: fonts.display },
-  stashUnit: { fontSize: 20, fontFamily: fonts.heading },
-  hint: { fontSize: 14 },
+  planRow: { flexDirection: 'row', alignItems: 'center', gap: 18, paddingHorizontal: 24 },
+  projection: { flex: 1, fontFamily: fonts.soft, fontSize: 19, lineHeight: 27 },
+  footer: { paddingHorizontal: 20, paddingTop: 8 },
+  stashRow: { flexDirection: 'row', alignItems: 'baseline', gap: 12, marginHorizontal: 24, borderBottomWidth: 2 },
+  stashInput: { flex: 1, paddingVertical: 8, fontSize: 48, fontFamily: fonts.display },
+  stashUnit: { fontSize: 22, fontFamily: fonts.heading },
+  hint: { fontSize: 15, paddingHorizontal: 24 },
 });

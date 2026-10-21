@@ -121,6 +121,9 @@ interface AppState {
   /** Bumped whenever sessions or bags change, so screens refetch. */
   dataVersion: number;
   bumpData: () => void;
+  /** A one-line note at the bottom of the screen for a few seconds ("Logged. 4½ oz."). */
+  notice: string | null;
+  say: (text: string) => void;
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -134,6 +137,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const activeRef = useRef<ActiveSession | null>(null);
   const [ready, setReady] = useState(false);
   const [dataVersion, setDataVersion] = useState(0);
+  const [notice, setNotice] = useState<string | null>(null);
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const say = useCallback((text: string) => {
+    if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    setNotice(text);
+    noticeTimer.current = setTimeout(() => setNotice(null), 3800);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -246,8 +256,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ready,
       dataVersion,
       bumpData: () => setDataVersion((v) => v + 1),
+      notice,
+      say,
     }),
-    [settings, updateSettings, isPro, paywallVisible, active, startSession, updateActive, clearActive, ready, dataVersion]
+    [settings, updateSettings, isPro, paywallVisible, active, startSession, updateActive, clearActive, ready, dataVersion, notice, say]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
