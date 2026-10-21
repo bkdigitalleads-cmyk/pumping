@@ -5,8 +5,9 @@ const sharp = require('sharp');
 //   bag    - a milk storage pouch: tear notches, zip line, write-on stripe, milk, gusset
 //   bottle - a pump collection bottle: flat ridged screw cap, straight sides, oz marks
 //   tape   - the same pouch with a strip of masking tape and two marker strokes
-// Chosen: bag. See docs/design/NOTES.md for why.
-const CHOSEN = 'bag';
+// Chosen: bottle (build 2, after Brian's TestFlight pass: the bag read as a
+// beige blob at icon size). See docs/design/NOTES.md for why.
+const CHOSEN = 'bottle';
 
 const CREAM = '#FAF3E8';
 const CLAY = '#A8503A';
@@ -69,17 +70,27 @@ const art = {
     ${bg('clay')}
     <g transform="${POUCH_AT}">${pouch()}</g>
   </svg>`,
-  // A pump collection bottle: wide mouth, straight sides, a flat screw cap with ridges, oz marks.
-  bottle: () => `<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+  // A pump collection bottle: flat screw cap with fine ridges, a short
+  // threaded neck, wide mouth, straight sides, oz marks printed up the side,
+  // milk about two thirds up. Drawn big so it fills the tile.
+  bottle: () => {
+    const body = 'M330 306 H694 Q742 306 744 356 L744 862 Q744 932 674 932 H350 Q280 932 280 862 L280 356 Q282 306 330 306 Z';
+    const milkY = 932 - (2 / 3) * (932 - 356);
+    return `<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
     ${bg('clay')}
-    <defs><clipPath id="b"><path d="M368 352 H656 Q694 352 696 392 L696 820 Q696 888 628 888 H396 Q328 888 328 820 L328 392 Q330 352 368 352 Z"/></clipPath></defs>
-    <rect x="372" y="300" width="280" height="60" fill="#F0E2CE"/>
-    <path d="M368 352 H656 Q694 352 696 392 L696 820 Q696 888 628 888 H396 Q328 888 328 820 L328 392 Q330 352 368 352 Z" fill="#F0E2CE"/>
-    <g clip-path="url(#b)"><rect x="300" y="580" width="420" height="380" fill="${MILK}"/><rect x="300" y="576" width="420" height="12" fill="${MILK_LINE}"/></g>
-    <rect x="340" y="150" width="344" height="160" rx="16" fill="${CREAM}"/>
-    ${Array.from({ length: 11 }, (_, i) => `<rect x="${372 + i * 28}" y="176" width="7" height="108" rx="3.5" fill="${CLAY}" opacity="0.45"/>`).join('')}
-    ${[0, 1, 2, 3, 4, 5].map((i) => `<rect x="${i % 2 ? 586 : 546}" y="${450 + i * 64}" width="${i % 2 ? 70 : 110}" height="16" rx="8" fill="${CLAY}"/>`).join('')}
-  </svg>`,
+    <defs><clipPath id="b"><path d="${body}"/></clipPath></defs>
+    <rect x="326" y="246" width="372" height="72" fill="#F0E2CE"/>
+    <rect x="326" y="276" width="372" height="8" fill="${MILK_LINE}"/>
+    <path d="${body}" fill="#F0E2CE"/>
+    <g clip-path="url(#b)">
+      <rect x="260" y="${milkY}" width="500" height="420" fill="${MILK}"/>
+      <rect x="260" y="${milkY - 6}" width="500" height="14" fill="${MILK_LINE}"/>
+    </g>
+    <rect x="292" y="92" width="440" height="168" rx="20" fill="${CREAM}"/>
+    ${Array.from({ length: 13 }, (_, i) => `<rect x="${324 + i * 30.5}" y="120" width="8" height="112" rx="4" fill="${CLAY}" opacity="0.45"/>`).join('')}
+    ${Array.from({ length: 7 }, (_, i) => `<rect x="${i % 2 ? 630 : 580}" y="${420 + i * 72}" width="${i % 2 ? 70 : 120}" height="18" rx="9" fill="${CLAY}"/>`).join('')}
+  </svg>`;
+  },
   tape: () => `<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
     ${bg('clay')}
     <g transform="${POUCH_AT}">${pouch({ stripe: false })}
@@ -101,6 +112,11 @@ async function writeChosen() {
   await sharp(full).resize(1024, 1024).grayscale().png().toFile('../assets/android-icon-monochrome.png');
   await sharp(full).resize(48, 48).png().toFile('../assets/favicon.png');
   await sharp(full).resize(512, 512).png().toFile('../assets/splash-icon.png');
+  // The website (docs/): the logo next to the name, the iOS home screen icon, and the share card.
+  const mask = Buffer.from('<svg width="512" height="512"><rect width="512" height="512" rx="114" fill="#fff"/></svg>');
+  await sharp(full).resize(512, 512).composite([{ input: mask, blend: 'dest-in' }]).png().toFile('../docs/icon-512.png');
+  await sharp(full).resize(180, 180).png().toFile('../docs/apple-touch-icon.png');
+  await sharp(full).resize(1200, 630, { fit: 'contain', background: CREAM }).png().toFile('../docs/og-image.png');
   console.log('icons written:', CHOSEN);
 }
 

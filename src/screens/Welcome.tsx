@@ -109,6 +109,7 @@ function BagPair({ theme }: { theme: Theme }) {
 /** The trial and reminder screens. Calls onDone right away when no trial is on offer. */
 export function TrialSteps({ onDone }: { onDone: () => void }) {
   const theme = useTheme();
+  const { updateSettings } = useApp();
   const [offer, setOffer] = useState<TrialOffer | null | undefined>(undefined);
   const [step, setStep] = useState<'trial' | 'remind'>('trial');
   const [waiting, setWaiting] = useState(false);
@@ -162,7 +163,10 @@ export function TrialSteps({ onDone }: { onDone: () => void }) {
       onPress={async () => {
         // Ask for notifications, then on to the paywall whatever the answer.
         setWaiting(true);
-        await requestReminderPermission();
+        // Notifications allowed here (for example after "Not now" on the
+        // reminder step) also turn the next-pump reminder on, so Settings
+        // matches what iOS allows. It stays switchable in Settings.
+        if (await requestReminderPermission()) await updateSettings({ reminderEnabled: true }).catch(() => {});
         setWaiting(false);
         onDone();
       }}

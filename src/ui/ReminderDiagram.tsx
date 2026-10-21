@@ -9,6 +9,9 @@ import { fmtHm, ReminderAnchor } from '../logic';
  * and where the next reminder lands when the interval counts from its start
  * or from its end. The chosen one is in the accent color.
  */
+/** Room kept to the right of the bar for "9:20" at 14 pt bold. */
+const END_LABEL_W = 36;
+
 export default function ReminderDiagram({
   theme,
   intervalMin,
@@ -24,6 +27,7 @@ export default function ReminderDiagram({
   const sessionMin = 20;
   const span = intervalMin + sessionMin + 30;
   const x = (min: number) => 18 + (min / span) * (w - 36);
+  const barEnd = Math.max(x(sessionMin), x(0) + 8);
   const color = (a: ReminderAnchor) => (anchor == null || anchor === a ? theme.accent : theme.inkFaint);
   const rows: { a: ReminderAnchor; from: number; y: number; label: string }[] = [
     { a: 'start', from: 0, y: 70, label: 'from the start' },
@@ -38,12 +42,19 @@ export default function ReminderDiagram({
     >
       {w > 0 && (
         <Svg width={w} height={150}>
-          <Line x1={x(0)} x2={x(span)} y1={28} y2={28} stroke={theme.rule} strokeWidth={1.5} />
-          <Rect x={x(0)} y={18} width={Math.max(8, x(sessionMin) - x(0))} height={20} rx={4} fill={theme.milk} stroke={theme.plasticEdge} />
+          {/*
+            The start time sits above the bar's start; the end time sits to the
+            right of the bar, on the bar's own row, with the time line broken
+            around it. Different rows, so the two never touch at any width.
+          */}
+          <Rect x={x(0)} y={18} width={Math.max(8, barEnd - x(0))} height={20} rx={4} fill={theme.milk} stroke={theme.plasticEdge} />
+          {x(span) > barEnd + END_LABEL_W + 10 && (
+            <Line x1={barEnd + END_LABEL_W + 10} x2={x(span)} y1={28} y2={28} stroke={theme.rule} strokeWidth={1.5} />
+          )}
           <SvgText x={x(0)} y={12} fontSize={14} fill={theme.inkSoft} fontWeight="700">
             9:00
           </SvgText>
-          <SvgText x={x(sessionMin) + 4} y={12} fontSize={14} fill={theme.inkSoft} fontWeight="700">
+          <SvgText x={barEnd + 5} y={33} fontSize={14} fill={theme.inkSoft} fontWeight="700">
             9:20
           </SvgText>
           {rows.map((r) => {

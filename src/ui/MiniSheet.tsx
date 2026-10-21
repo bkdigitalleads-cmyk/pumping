@@ -10,7 +10,18 @@ import Tape, { Marker } from './Tape';
  * supply log or the caregiver sheet, filled with the parent's own numbers
  * when there are any, and with a clearly marked example when there are not.
  */
-export default function MiniSheet({ theme, kind, unit }: { theme: Theme; kind: 'supply' | 'caregiver'; unit: Unit }) {
+export default function MiniSheet({
+  theme,
+  kind,
+  unit,
+  maxRows = 5,
+}: {
+  theme: Theme;
+  kind: 'supply' | 'caregiver';
+  unit: Unit;
+  /** Fewer rows on short screens; 0 shows just the title and the summary. */
+  maxRows?: number;
+}) {
   const [rows, setRows] = useState<{ a: string; b: string; c: string; bar?: number }[] | null>(null);
   const [summary, setSummary] = useState('');
   const [example, setExample] = useState(false);
@@ -64,8 +75,8 @@ export default function MiniSheet({ theme, kind, unit }: { theme: Theme; kind: '
       <View style={[styles.paper, { backgroundColor: theme.paper, borderColor: theme.rule }]}>
         <Text style={[styles.title, { color: theme.ink }]}>{title}</Text>
         <Text style={[styles.sub, { color: theme.inkSoft }]}>{summary}</Text>
-        <View style={[styles.rule, { backgroundColor: theme.accent }]} />
-        {(rows ?? []).map((r, i) => (
+        {maxRows > 0 && <View style={[styles.rule, { backgroundColor: theme.accent }]} />}
+        {(rows ?? []).slice(0, maxRows).map((r, i) => (
           <View key={i} style={[styles.row, { borderBottomColor: theme.rule }]}>
             <Text style={[styles.cell, styles.cellA, { color: theme.ink, fontWeight: i === 0 && kind === 'caregiver' ? '700' : '400' }]}>{r.a}</Text>
             {r.bar != null ? (

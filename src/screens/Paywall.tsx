@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Modal, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 import { useTheme, fonts, radius, Theme } from '../theme';
@@ -49,6 +49,13 @@ const FOCUS_LINE: Record<Focus, string> = {
 export default function PaywallModal({ privacyUrl, onboarding = false }: { privacyUrl: string; onboarding?: boolean }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  // Both plan rows, Continue and the legal footer must fit without scrolling
+  // on a 414x896 phone, and on 375x667 too. Below 900 pt the hero shrinks;
+  // below 700 pt the sheet keeps only its title. Checked in the web renderer
+  // at 414x896, 375x812 and 375x667.
+  const { height } = useWindowDimensions();
+  const compact = height < 900;
+  const tiny = height < 700;
   const { paywallVisible, hidePaywall, setIsPro, settings } = useApp();
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
   const [selected, setSelected] = useState<PurchasesPackage | null>(null);
@@ -187,27 +194,41 @@ export default function PaywallModal({ privacyUrl, onboarding = false }: { priva
       <View style={[styles.container, { backgroundColor: theme.bg }]}>
         <ScrollView contentContainerStyle={styles.scroll}>
           {/* Holds its space while hidden so nothing jumps when the close button appears. */}
-          <View style={[styles.closeRow, { opacity: canClose ? 1 : 0 }]} accessibilityElementsHidden={!canClose}>
+          {/* On short screens the close button sits beside the sheet instead of on its own row. */}
+          <View
+            style={[compact ? styles.closeFloat : styles.closeRow, { opacity: canClose ? 1 : 0 }]}
+            accessibilityElementsHidden={!canClose}
+          >
             <RoundButton theme={theme} icon="close" label="Close" onPress={hidePaywall} disabled={!canClose} />
           </View>
 
-          <MiniSheet theme={theme} kind={sheetKind} unit={settings.unit} />
+          <View style={compact && styles.sheetCompact}>
+            <MiniSheet theme={theme} kind={sheetKind} unit={settings.unit} maxRows={tiny ? 0 : !compact ? 5 : height >= 800 ? 3 : 2} />
+          </View>
 
-          <Text style={[styles.title, { color: theme.ink }]} accessibilityRole="header">
+          <Text style={[styles.title, compact && styles.titleCompact, { color: theme.ink }]} accessibilityRole="header">
             {headline}
           </Text>
-          <Text style={[styles.focus, { color: theme.inkSoft }]}>{FOCUS_LINE[settings.focus]}</Text>
-          <Text style={[styles.what, { color: theme.inkSoft }]}>
-            Pro keeps every session past the first {FREE_SESSION_LIMIT}, holds the whole freezer instead of {FREE_BAG_LIMIT} bags, opens 30 and 90 days of
-            trends, and makes the supply log and the caregiver sheet.
+          <Text style={[styles.focus, compact && styles.focusCompact, { color: theme.inkSoft }]} numberOfLines={compact ? 2 : undefined}>
+            {FOCUS_LINE[settings.focus]}
           </Text>
+          {compact ? (
+            <Text style={[styles.what, styles.whatCompact, { color: theme.inkSoft }]} numberOfLines={1}>
+              Every session, the whole freezer, both PDFs.
+            </Text>
+          ) : (
+            <Text style={[styles.what, { color: theme.inkSoft }]}>
+              Pro keeps every session past the first {FREE_SESSION_LIMIT}, holds the whole freezer instead of {FREE_BAG_LIMIT} bags, opens 30 and 90 days of
+              trends, and makes the supply log and the caregiver sheet.
+            </Text>
+          )}
 
           {loading ? (
             <ActivityIndicator style={{ marginVertical: 24 }} color={theme.accent} />
           ) : packages.length === 0 || !isBillingAvailable() ? (
             <Text style={[styles.unavailable, { color: theme.inkSoft }]}>The App Store is not answering right now. Try again in a bit.</Text>
           ) : (
-            <View style={[styles.plans, { borderTopColor: theme.rule }]} accessibilityRole="radiogroup">
+            <View style={[styles.plans, compact && styles.plansCompact, { borderTopColor: theme.rule }]} accessibilityRole="radiogroup">
               {packages.map((p) => {
                 const on = selected?.identifier === p.identifier;
                 const isLifetime = p.packageType === 'LIFETIME';
@@ -228,7 +249,7 @@ export default function PaywallModal({ privacyUrl, onboarding = false }: { priva
                   <Press
                     key={p.identifier}
                     onPress={() => setSelected(p)}
-                    style={[styles.plan, { borderBottomColor: theme.rule, backgroundColor: on ? theme.accentSoft : 'transparent' }]}
+                    style={[styles.plan, compact && styles.planCompact, { borderBottomColor: theme.rule, backgroundColor: on ? theme.accentSoft : 'transparent' }]}
                     pressedStyle={{ backgroundColor: theme.sunk }}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: on }}
@@ -247,7 +268,7 @@ export default function PaywallModal({ privacyUrl, onboarding = false }: { priva
           )}
         </ScrollView>
 
-        <View style={[styles.bottom, { borderTopColor: theme.rule, paddingBottom: Math.max(insets.bottom, 14) }]}>
+        <View style={[styles.bottom, compact && styles.bottomCompact, { borderTopColor: theme.rule, paddingBottom: Math.max(insets.bottom, compact ? 8 : 14) }]}>
           {/* The button says Continue, never Subscribe. */}
           <PillAction
             theme={theme}
@@ -306,6 +327,14 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingBottom: 24 },
   closeRow: { alignItems: 'flex-end', paddingHorizontal: 14, paddingTop: 12 },
+  closeFloat: { position: 'absolute', top: 10, right: 10, zIndex: 2 },
+  sheetCompact: { paddingRight: 58, paddingTop: 6 },
+  titleCompact: { fontSize: 25, lineHeight: 30, marginTop: 14 },
+  focusCompact: { fontSize: 16, lineHeight: 22, marginTop: 4 },
+  whatCompact: { fontSize: 14, lineHeight: 19, marginTop: 4 },
+  plansCompact: { marginTop: 12 },
+  planCompact: { minHeight: 62, paddingVertical: 8 },
+  bottomCompact: { paddingTop: 8, gap: 6 },
   title: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, marginTop: 22, paddingHorizontal: 20 },
   focus: { fontFamily: fonts.soft, fontSize: 18, lineHeight: 25, marginTop: 6, paddingHorizontal: 20 },
   what: { fontSize: 15, lineHeight: 22, marginTop: 10, paddingHorizontal: 20 },

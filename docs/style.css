@@ -18,6 +18,7 @@ a { color:var(--clay); }
 .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:18px; }
 .card { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:18px; }
 .card b { display:block; font-family:"Fraunces",Georgia,serif; font-weight:600; font-size:18px; margin-bottom:4px; }
-.faq b { display:block; margin-top:18px; }
+.faq h3 { margin:22px 0 4px; font-size:18px; }
+.brand img { border-radius:8px; }
 footer { margin-top:56px; padding-top:18px; border-top:1px solid var(--line); color:var(--faint); font-size:14px; }
 footer a { margin-right:14px; }

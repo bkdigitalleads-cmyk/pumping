@@ -15,13 +15,13 @@ Before and after: `before/` and `after/` hold the same screens at 393x852 @3x, l
 
 ## Icon
 
-Three options in `icon-options.png` (big, and at 60x60 on light and dark wallpaper), redrawn Oct 21 after Brian's review: 1 bag, 2 bottle, 3 bag with tape. All three use the drawings the app now uses: the bag is a flat pouch (widest at the top, a heat seal with two tear notches cut into the outline, a clay zip line, the white write-on stripe, milk below, a gusseted flat base), and the bottle is a pump collection bottle (flat screw cap with fine ridges, wide mouth, straight sides, oz marks), with no nipple.
+Now the bottle (build 2, Oct 21). Brian's TestFlight pass on an iPhone 11-class phone: the bag "reads as a beige blob" on the real home screen. At true icon size, against a wallpaper and other icons, the pouch's cues (tear notches, zip line, stripe) are too fine to carry it, and what is left is a pale tilted shape. So the icon is option 2: the pump collection bottle with the flat ridged cap, the oz marks printed up the side and milk about two thirds up, on the clay field. It is drawn larger than in the first comparison so it fills the tile: the cap starts about 9% from the top and the base sits about 9% from the bottom. A pump bottle with a screw cap and printed marks, rather than a feeding bottle with a nipple, still says pumping. Inside the app the bags stay as they are; they are drawn much larger there.
 
-Picked 1, the bag, again. Checked at 60 px on light and dark:
-- Bag: the first pouch of this round still read as a cup at 60 px, because straight tapered sides, a thick outline and round bottom corners are exactly what a cup looks like. The picked version bows the sides out a touch like soft plastic, uses a thinner outline, a flat base with small corners and a stronger lean, and adds a clay zip line and side marks. At 60 px it now reads as a labeled pouch: the notched top, the zip line and the white stripe survive at that size, and nothing about it looks like a lid or a rim.
-- Bottle: the fastest read at 60 px, and with the cap it is clearly a pump bottle up close. At 60 px, though, the ridged cap turns into a plain lid and it could be any jar or pill bottle, and bottles are what every baby and feeding app already uses.
-- Tape: up close it is the most "handled", but at 60 px the tape becomes a pale band across the bag and the marker strokes are lost, so it reads less clearly than option 1.
-The bag is also the object only pumping parents handle every day and the thing the stash is built around, so it says "pumping" rather than "baby app". Drawn in `store/icon.js` (`node icon.js options` redraws the comparison, `node icon.js` writes the assets).
+`icon-options.png` shows all three (1 bag, 2 bottle, 3 bag with tape), big and at 60x60 on light and dark wallpaper, with the bottle marked as picked.
+
+History: the first comparison (design pass) picked the bag over the bottle because bottles are what feeding apps use and the bag is the object only pumping parents handle. The second round (Oct 21, after Brian's review of the after screens) kept the bag after reworking it so it no longer read as a cup. Brian's on-device look settled it the other way.
+
+Drawn in `store/icon.js` (`node icon.js options` redraws the comparison, `node icon.js` writes the assets).
 
 ## Checklist
 
@@ -71,7 +71,7 @@ The bag is also the object only pumping parents handle every day and the thing t
 - [x] The bottle fills; a used or tossed bag slides off its shelf (with Undo); timer digits do not jitter. Reduce Motion makes both jump to the end.
 
 9. Icon
-- [x] Drop-in-a-ring retired. Three options drawn in `icon-options.png`; the storage bag is picked (reasons above) and written to `assets/`.
+- [x] Drop-in-a-ring retired. Three options drawn in `icon-options.png`; the pump bottle is the icon from build 2 (reasons above), written to `assets/`.
 
 10. Craft
 - [x] Fixed-width figures on every number that changes in place (timer, side amounts, countdown, nudges, timeline times, ledger).

@@ -6,7 +6,7 @@ Part of Brian's iOS app portfolio (seller bkdigitalleads-cmyk). Expo SDK 57, Rea
 
 - App Store name: "Pumping Tracker: Breast Milk" (the first choice, "Pumping Tracker: Milk Stash", was taken). Home screen name: "Pumping". Bundle ID: com.bwk.pumping. Expo slug and scheme: pumping. GitHub: bkdigitalleads-cmyk/pumping.
 - App Store app ID: 6825142604 (eas.json `ascAppId`). Expo project: bkdeveloper123/pumping, projectId 41f7569e-9c5f-4df9-a793-b6a394ff0159 (app.json `extra.eas.projectId`). RevenueCat: project Pumping, public iOS key in app.json `extra.revenueCatApiKeyIos` (set up by Cowork on Oct 21). The app runs with purchases off if that key is ever missing or does not start with `appl_`.
-- Not in the store yet. First version 1.0.0, build 1. Brian approved the app on Oct 20, 2026.
+- Not in the store yet. Version 1.0.0: build 1 merged and uploaded to TestFlight on Oct 21, 2026 (PR #1); build 2 has the fixes from Brian's first TestFlight pass. Brian approved the app on Oct 20, 2026.
 - What it is: an offline log for parents who pump breast milk. Sessions with a timer and left/right amounts, today's total against a goal, a next-pump reminder from the START or the END of the last session, a freezer stash in use-by order, trends, and two Pro PDFs (supply log, caregiver sheet). Log only: no medical advice or claims. Never collect a baby's name, birth date or photos.
 - Never write "Pump Log" anywhere (a registered trademark of another app): not in the app, store text, keywords or the website.
 
