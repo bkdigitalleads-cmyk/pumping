@@ -2,6 +2,8 @@
 
 Newest first. One entry per commit: date, version/build, what changed and why, and how it was checked.
 
+- 2026-11-03: Website only, no app build (app.json still 1.0.0 build 2). Support address on the website changed from the personal Gmail to bkdigitalleads@gmail.com in docs/privacy.html, docs/support.html. App source, app.json and store/ untouched; the in-app support address changes in the next release.
+  - Checked: .eas/workflows/deploy.yml only runs on pushes to main that touch app.json, eas.json, package*.json, App.tsx, index.ts, src/ or assets/, so this commit (website files and NOTES.md only) starts no EAS build or submit. git grep shows no brianwkershner left in the changed files.
 - 2026-10-21: 1.0.0 build 2 (ios.buildNumber 1 to 2; branch claude/amazing-lamport-jr90mm restarted from main after PR #1 merged; new PR, not merged). Fixes from Brian's TestFlight pass of build 1 on an iPhone 11-class phone (414x896 pt).
   - Build 1 for the record: PR #1 merged on Brian's go (merge commit 49d334d). The EAS workflow "Build and submit iOS" built in about 5 minutes and submitted to App Store Connect about 2 minutes later, both succeeded.
   - App icon: the bag read as a beige blob on the home screen, so the icon is now the pump collection bottle (flat ridged cap, oz marks, milk about two thirds up) on clay, drawn to fill the tile. store/icon.js (CHOSEN = 'bottle') regenerated assets/ and now also writes docs/icon-512.png, docs/apple-touch-icon.png and docs/og-image.png. docs/design/icon-options.png redrawn with the bottle marked as picked; docs/design/NOTES.md says why. The bags inside the app are unchanged.
