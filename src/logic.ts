@@ -362,6 +362,69 @@ export function suggestedIntervalMin(pumpsPerDay: number): number {
   return Math.min(720, Math.max(60, Math.round(raw / 15) * 15));
 }
 
+// ---------- free window and one-time flags ----------
+
+const DAY_MS = 24 * 60 * 60_000;
+
+/** Free plan: every session for this many days from the first one. Pro removes the limit. */
+export const FREE_DAYS = 3;
+
+/** When the free window closes, or null before the first session. */
+export function freeWindowEndsAt(firstSessionAt: number | null): number | null {
+  return firstSessionAt == null ? null : firstSessionAt + FREE_DAYS * DAY_MS;
+}
+
+/**
+ * Whether a new session can be started or logged. Free for the first
+ * FREE_DAYS from the first session (and before there is one); after that
+ * only with Pro. A session already running can always be finished; that
+ * is not decided here.
+ */
+export function canLogNewSession(isPro: boolean, firstSessionAt: number | null, now: number): boolean {
+  if (isPro) return true;
+  const ends = freeWindowEndsAt(firstSessionAt);
+  return ends == null || now < ends;
+}
+
+/**
+ * The stored start of the free window (epoch ms as text), or, on an install
+ * from before 1.0.1 that never stored it, the start of the earliest session.
+ */
+export function firstSessionAtFrom(stored: string | null, earliestStartedAt: number | null): number | null {
+  const n = stored == null ? NaN : Number(stored);
+  if (Number.isFinite(n) && n > 0) return n;
+  return earliestStartedAt != null && Number.isFinite(earliestStartedAt) ? earliestStartedAt : null;
+}
+
+/**
+ * The trial screens and paywall after the first saved session, once ever.
+ * New installs store 'pending' when onboarding ends; installs from before
+ * 1.0.1 have no value and never see it.
+ *   none - not pending (installs from before 1.0.1, or it already ran)
+ *   wait - pending, but no saved session yet, or one is running
+ *   skip - pending, but Pro already: mark it done without showing anything
+ *   run  - show it now
+ */
+export function firstFlowStep(
+  flag: string | null,
+  sessionCount: number,
+  isPro: boolean,
+  sessionRunning: boolean
+): 'none' | 'wait' | 'skip' | 'run' {
+  if (flag !== 'pending') return 'none';
+  if (sessionCount <= 0 || sessionRunning) return 'wait';
+  return isPro ? 'skip' : 'run';
+}
+
+/**
+ * The paywall's second chance: the day the after-first-session paywall was
+ * shown is stored, and the in-app paywall opens once more on the first
+ * launch on a later calendar day. 'done' or nothing means never.
+ */
+export function secondChanceDue(stored: string | null, today: string): boolean {
+  return stored != null && /^\d{4}-\d{2}-\d{2}$/.test(stored) && stored < today;
+}
+
 // ---------- formatting ----------
 
 /** "18 min", "1 h 5 m", "45 sec". */

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, fonts, Theme } from '../theme';
 import { useApp } from '../state';
@@ -9,11 +9,14 @@ import {
   fmtClock,
   fmtDuration,
   fmtHm,
+  fmtInterval,
+  fmtIntervalWords,
   fmtRelDay,
   fmtTime,
   fmtVol,
   isoFromMs,
   parseVolume,
+  ReminderAnchor,
   startOfDayMs,
   stepVolume,
   todayIso,
@@ -24,6 +27,9 @@ import {
   volumeStep,
 } from '../logic';
 import { maybeRequestReviewAfterSession } from '../reviews';
+import { firstFlowPending, recordFirstSession } from '../firstRun';
+import { requestReminderPermission } from '../reminder';
+import ReminderDiagram from '../ui/ReminderDiagram';
 import Figures from '../ui/Figures';
 import ThumbBar from '../ui/ThumbBar';
 import { Entry, Nudge, Section, Tabs } from '../ui/List';
@@ -36,6 +42,10 @@ import Icon from '../icons';
  *          switching and relaunch) with left and right halves to tap
  *  past  - log a session that already happened: day, start time, length
  *  edit  - the same form for a saved session, with delete
+ * After the first session a new install saves (live or past), a done screen
+ * asks about the next-pump reminder before the sheet closes (since 1.0.1;
+ * it used to be an onboarding question). Every other save just closes with
+ * a one-line notice.
  */
 export type SessionMode = 'live' | 'past' | 'edit';
 
@@ -58,6 +68,11 @@ function confirm(title: string, message: string, ok: string, cancel: string): Pr
       { text: ok, onPress: () => resolve(true) },
     ])
   );
+}
+
+/** The reminder question comes once, after the first session of a new install, while reminders are off. */
+async function shouldAskReminder(reminderEnabled: boolean): Promise<boolean> {
+  return !reminderEnabled && (await firstFlowPending());
 }
 
 /** "Logged. 4½ oz, left side did more today." */
@@ -84,27 +99,42 @@ export default function SessionModal({
   onClose: () => void;
 }) {
   const theme = useTheme();
+  const { say } = useApp();
   // "Fix the times" turns a forgotten live timer into the past-session form.
   const [fixing, setFixing] = useState(false);
+  // The saved line, while the done screen with the reminder question shows.
+  const [done, setDone] = useState<string | null>(null);
   useEffect(() => {
-    if (visible) setFixing(false);
+    if (visible) {
+      setFixing(false);
+      setDone(null);
+    }
   }, [visible]);
+
+  const onSaved = (line: string, askReminder: boolean) => {
+    if (askReminder) return setDone(line);
+    onClose();
+    say(line);
+  };
 
   const view = mode === 'live' && !fixing ? 'live' : mode === 'live' ? 'fix' : mode;
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: theme.bg }}>
-        {visible && view === 'live' && <Live onClose={onClose} onFix={() => setFixing(true)} />}
-        {visible && view !== 'live' && <PastForm mode={view} sessionId={sessionId} onClose={onClose} />}
+        {visible && done != null && <ReminderAsk line={done} onClose={onClose} />}
+        {visible && done == null && view === 'live' && <Live onClose={onClose} onFix={() => setFixing(true)} onSaved={onSaved} />}
+        {visible && done == null && view !== 'live' && <PastForm mode={view} sessionId={sessionId} onClose={onClose} onSaved={onSaved} />}
       </View>
     </Modal>
   );
 }
 
-function Live({ onClose, onFix }: { onClose: () => void; onFix: () => void }) {
+type OnSaved = (line: string, askReminder: boolean) => void;
+
+function Live({ onClose, onFix, onSaved }: { onClose: () => void; onFix: () => void; onSaved: OnSaved }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { active, updateActive, clearActive, settings, bumpData, say } = useApp();
+  const { active, updateActive, clearActive, settings, bumpData } = useApp();
   const [now, setNow] = useState(Date.now());
   const [saving, setSaving] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
@@ -118,6 +148,8 @@ function Live({ onClose, onFix }: { onClose: () => void; onFix: () => void }) {
   const elapsedSec = active ? Math.max(0, (now - active.startedAt) / 1000) : 0;
 
   if (!active) {
+    // Just saved: the sheet is closing or moving on to the done screen.
+    if (saving) return <View style={{ flex: 1 }} />;
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
         <Text style={[styles.quiet, { color: theme.inkSoft }]}>The timer is not running.</Text>
@@ -147,11 +179,13 @@ function Live({ onClose, onFix }: { onClose: () => void; onFix: () => void }) {
     setSaving(true);
     try {
       await insertSession({ ...active, endedAt });
+      await recordFirstSession(active.startedAt);
+      const line = await savedLine(totalMl, unit);
+      const ask = await shouldAskReminder(settings.reminderEnabled);
       await clearActive();
       success();
       bumpData();
-      onClose();
-      say(await savedLine(totalMl, unit));
+      onSaved(line, ask);
       maybeRequestReviewAfterSession(await countSessions());
     } catch (e: any) {
       Alert.alert('That did not save', e?.message ?? 'Try once more.');
@@ -285,10 +319,20 @@ function SideHalf({
   );
 }
 
-function PastForm({ mode, sessionId, onClose }: { mode: 'past' | 'edit' | 'fix'; sessionId: number | null; onClose: () => void }) {
+function PastForm({
+  mode,
+  sessionId,
+  onClose,
+  onSaved,
+}: {
+  mode: 'past' | 'edit' | 'fix';
+  sessionId: number | null;
+  onClose: () => void;
+  onSaved: OnSaved;
+}) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { settings, bumpData, active, clearActive, say } = useApp();
+  const { settings, bumpData, active, clearActive } = useApp();
   const unit = settings.unit;
   const [form, setForm] = useState<Form | null>(null);
   const [saving, setSaving] = useState(false);
@@ -350,15 +394,21 @@ function PastForm({ mode, sessionId, onClose }: { mode: 'past' | 'edit' | 'fix';
       const input = { startedAt: form.startedAt, endedAt, leftMl: form.leftMl, rightMl: form.rightMl, note: form.note };
       if (mode === 'edit' && sessionId != null) {
         await updateSession(sessionId, input);
-      } else {
-        await insertSession(input);
-        if (mode === 'fix') await clearActive();
+        success();
+        bumpData();
+        onSaved('Saved.', false);
+        return;
       }
+      await insertSession(input);
+      // A forgotten live timer counts from its start; a past session from now, when it was logged.
+      await recordFirstSession(mode === 'fix' ? form.startedAt : Date.now());
+      const line = await savedLine(form.leftMl + form.rightMl, unit);
+      const ask = await shouldAskReminder(settings.reminderEnabled);
+      if (mode === 'fix') await clearActive();
       success();
       bumpData();
-      onClose();
-      say(mode === 'edit' ? 'Saved.' : await savedLine(form.leftMl + form.rightMl, unit));
-      if (mode !== 'edit') maybeRequestReviewAfterSession(await countSessions());
+      onSaved(line, ask);
+      maybeRequestReviewAfterSession(await countSessions());
     } catch (e: any) {
       Alert.alert('That did not save', e?.message ?? 'Try once more.');
     } finally {
@@ -474,7 +524,79 @@ function PastForm({ mode, sessionId, onClose }: { mode: 'past' | 'edit' | 'fix';
   );
 }
 
+/**
+ * The done screen after a new install's first session: the saved line, then
+ * the next-pump reminder (what the onboarding reminder step asked until
+ * 1.0.0). Either answer closes the sheet; it all stays in Settings.
+ */
+function ReminderAsk({ line, onClose }: { line: string; onClose: () => void }) {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const { settings, updateSettings } = useApp();
+  const [anchor, setAnchor] = useState<ReminderAnchor>(settings.reminderAnchor);
+  const [interval, setIntervalMin] = useState(settings.reminderIntervalMin);
+  const [asking, setAsking] = useState(false);
+
+  const save = async (turnOn: boolean) => {
+    if (asking) return;
+    let enabled = false;
+    if (turnOn) {
+      setAsking(true);
+      enabled = await requestReminderPermission();
+    }
+    updateSettings({ reminderAnchor: anchor, reminderIntervalMin: interval, reminderEnabled: enabled }).catch(() => {});
+    onClose();
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 28, paddingBottom: 24 }}>
+        <View style={styles.doneRow} accessibilityLiveRegion="polite">
+          <Icon name="check" size={20} color={theme.success} strokeWidth={2.5} />
+          <Text style={[styles.doneLine, { color: theme.inkSoft }]}>{line}</Text>
+        </View>
+        <Text style={[styles.askTitle, { color: theme.ink }]} accessibilityRole="header">
+          Remind you in about {fmtIntervalWords(interval)}?
+        </Text>
+        <Text style={[styles.askLine, { color: theme.inkSoft }]}>One quiet notification on this phone, counted from the start or the end of a session.</Text>
+        <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+          <ReminderDiagram theme={theme} intervalMin={interval} anchor={anchor} />
+        </View>
+        <View style={{ paddingVertical: 8 }}>
+          <Tabs
+            theme={theme}
+            value={anchor}
+            onChange={setAnchor}
+            options={[
+              { value: 'start', label: 'From the start' },
+              { value: 'end', label: 'From the end' },
+            ]}
+          />
+        </View>
+        <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.rule }}>
+          <Nudge theme={theme} label="Every" value={fmtInterval(interval)} onStep={(d) => setIntervalMin((i) => Math.min(720, Math.max(30, i + d * 15)))} />
+        </View>
+      </ScrollView>
+      <View style={[styles.askFooter, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        {asking ? (
+          <ActivityIndicator color={theme.accent} style={{ height: 66 }} />
+        ) : (
+          <>
+            <PillAction theme={theme} tall label="Turn on reminders" onPress={() => save(true)} />
+            <TextAction theme={theme} label="Not now" onPress={() => save(false)} color={theme.inkSoft} align="center" />
+          </>
+        )}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  doneRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingHorizontal: 24 },
+  doneLine: { flex: 1, fontFamily: fonts.soft, fontSize: 17, lineHeight: 23 },
+  askTitle: { fontSize: 32, lineHeight: 38, fontFamily: fonts.display, paddingHorizontal: 24, marginTop: 18 },
+  askLine: { fontSize: 17, lineHeight: 24, marginTop: 10, paddingHorizontal: 24 },
+  askFooter: { paddingHorizontal: 20, paddingTop: 8, gap: 4 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 8 },
   quiet: { fontSize: 17 },
   liveTop: { paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

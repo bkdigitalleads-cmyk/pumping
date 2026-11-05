@@ -208,3 +208,55 @@ test('formatting and CSV', () => {
   assert.equal(csv.length, 2);
   assert.equal(csv[1], '2026-10-20 09:00,2026-10-20 09:20,20,60,70,130,2.03,2.37,4.40,"said ""hi"""');
 });
+
+test('free window: every session for the first 3 days from the first one, then Pro', () => {
+  const first = at(2026, 10, 30, 21, 15); // crosses the Nov 1 DST change
+  assert.equal(L.FREE_DAYS, 3);
+  // Before the first session there is no window yet: free.
+  assert.equal(L.canLogNewSession(false, null, first), true);
+  assert.equal(L.freeWindowEndsAt(null), null);
+  // 72 hours from the first session's start, not calendar days.
+  assert.equal(L.freeWindowEndsAt(first), first + 72 * 3600_000);
+  assert.equal(L.canLogNewSession(false, first, first + 60_000), true);
+  assert.equal(L.canLogNewSession(false, first, first + 72 * 3600_000 - 1), true);
+  assert.equal(L.canLogNewSession(false, first, first + 72 * 3600_000), false);
+  assert.equal(L.canLogNewSession(false, first, first + 30 * 24 * 3600_000), false);
+  // Pro is never stopped.
+  assert.equal(L.canLogNewSession(true, first, first + 30 * 24 * 3600_000), true);
+  assert.equal(L.canLogNewSession(true, null, first), true);
+});
+
+test('free window: stored start, or the earliest session on an install from before 1.0.1', () => {
+  assert.equal(L.firstSessionAtFrom('1793000000000', 1700000000000), 1793000000000);
+  assert.equal(L.firstSessionAtFrom(null, 1700000000000), 1700000000000);
+  assert.equal(L.firstSessionAtFrom('junk', 1700000000000), 1700000000000);
+  assert.equal(L.firstSessionAtFrom('0', null), null);
+  assert.equal(L.firstSessionAtFrom(null, null), null);
+  // A free user from 1.0.0 with sessions from a week ago is past the window on the next new session.
+  const weekAgo = at(2026, 10, 28, 8, 0);
+  const firstAt = L.firstSessionAtFrom(null, weekAgo);
+  assert.equal(L.canLogNewSession(false, firstAt, at(2026, 11, 5, 9, 0)), false);
+});
+
+test('one-time flag: the paywall after the first session runs once, for new installs only', () => {
+  // Installs from before 1.0.1 never stored the flag; after it ran it is 'done'.
+  assert.equal(L.firstFlowStep(null, 12, false, false), 'none');
+  assert.equal(L.firstFlowStep('done', 1, false, false), 'none');
+  // New install, before the first saved session, or while one runs.
+  assert.equal(L.firstFlowStep('pending', 0, false, false), 'wait');
+  assert.equal(L.firstFlowStep('pending', 0, false, true), 'wait');
+  assert.equal(L.firstFlowStep('pending', 1, false, true), 'wait');
+  // First session saved.
+  assert.equal(L.firstFlowStep('pending', 1, false, false), 'run');
+  assert.equal(L.firstFlowStep('pending', 1, true, false), 'skip');
+});
+
+test('one-time flag: the second chance comes on a later calendar day, once', () => {
+  assert.equal(L.secondChanceDue(null, '2026-11-05'), false);
+  assert.equal(L.secondChanceDue('done', '2026-11-05'), false);
+  assert.equal(L.secondChanceDue('2026-11-05', '2026-11-05'), false); // same day: no
+  assert.equal(L.secondChanceDue('2026-11-04', '2026-11-05'), true);
+  assert.equal(L.secondChanceDue('2026-10-31', '2026-11-05'), true);
+  assert.equal(L.secondChanceDue('2026-12-31', '2027-01-01'), true);
+  assert.equal(L.secondChanceDue('garbage', '2026-11-05'), false);
+});

@@ -96,20 +96,25 @@ export default function StashScreen() {
     }
   };
 
-  const editStarting = () =>
+  // The same amount also starts here from the empty stash (since 1.0.1 onboarding no longer asks for it).
+  const editStarting = () => {
+    const first = settings.startingStashMl <= 0;
     Alert.prompt?.(
-      'Milk from before',
-      `About how much, in ${unitLabel(unit)}? Put 0 once it is all in dated bags.`,
+      first ? 'Milk already in the freezer' : 'Milk from before',
+      first
+        ? `About how much, in ${unitLabel(unit)}? A rough total is fine. Dated bags can come later, one at a time.`
+        : `About how much, in ${unitLabel(unit)}? Put 0 once it is all in dated bags.`,
       (text) => {
         const v = parseVolume(text, unit);
         if (v != null) updateSettings({ startingStashMl: v });
       },
       'plain-text',
-      volNumber(settings.startingStashMl, unit),
+      first ? '' : volNumber(settings.startingStashMl, unit),
       'decimal-pad'
     );
+  };
 
-  // Milk entered in onboarding has no bags, so it is named on its own:
+  // Milk entered as one total (from the empty stash, or in onboarding until 1.0.0) has no bags, so it is named on its own:
   // "Stash. 37 oz: 2 bags and 30 from before." rather than "37 oz in 2 bags".
   const before = settings.startingStashMl;
   const daysPart = days != null ? `, about ${days} ${days === 1 ? 'day' : 'days'}` : '';
@@ -199,6 +204,11 @@ export default function StashScreen() {
             Your first bag goes here. Write the date on it before it goes in the freezer.
           </Text>
         )}
+        {empty && settings.startingStashMl <= 0 && (
+          <View style={styles.addBefore}>
+            <TextAction theme={theme} icon="snowflake" label="Add what is already in the freezer" onPress={editStarting} />
+          </View>
+        )}
         {!isPro && (
           <Press onPress={showPaywall} accessibilityRole="button" style={styles.limit}>
             <Text style={[styles.limitText, { color: theme.accent }]}>
@@ -249,6 +259,7 @@ const styles = StyleSheet.create({
   beforeText: { fontFamily: fonts.soft, fontSize: 16, lineHeight: 22 },
   hint: { fontSize: 14, lineHeight: 19, marginTop: 2 },
   emptyLine: { fontFamily: fonts.soft, fontSize: 18, lineHeight: 25, paddingHorizontal: 20 },
+  addBefore: { paddingHorizontal: 20, paddingTop: 6 },
   limit: { paddingHorizontal: 20, paddingTop: 10, minHeight: 44 },
   limitText: { fontSize: 15, fontWeight: '600', lineHeight: 21 },
   undo: {

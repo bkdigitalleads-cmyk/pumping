@@ -6,7 +6,7 @@ import { useApp } from '../state';
 import { deleteAllData } from '../db';
 import { restorePurchases, isBillingAvailable } from '../purchases';
 import { requestReminderPermission, cancelTrialReminder } from '../reminder';
-import { CDC_STORAGE_URL, PRIVACY_URL, SUPPORT_URL, TERMS_URL } from '../links';
+import { CDC_STORAGE_URL, PRIVACY_URL, SUPPORT_EMAIL, SUPPORT_URL, TERMS_URL } from '../links';
 import { DEFAULT_STORAGE, fmtHm, fmtInterval, fmtVol, fromUnit, nextPumpAt, parseVolume, toUnit, unitLabel, volNumber } from '../logic';
 import { Entry, Nudge, Section, Tabs, ToggleEntry } from '../ui/List';
 import { Press } from '../ui/Press';
@@ -219,6 +219,16 @@ export default function SettingsScreen() {
         <Entry theme={theme} label="Terms of Use (EULA)" onPress={() => Linking.openURL(TERMS_URL)} />
         <Entry theme={theme} label="Privacy Policy" onPress={() => Linking.openURL(PRIVACY_URL)} />
         <Entry theme={theme} label="Help and support" onPress={() => Linking.openURL(SUPPORT_URL)} />
+        <Entry
+          theme={theme}
+          label="Email support"
+          sub={SUPPORT_EMAIL}
+          onPress={() =>
+            Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Pumping')}`).catch(() =>
+              Alert.alert('Email support', `Write to ${SUPPORT_EMAIL} and we will get back to you.`)
+            )
+          }
+        />
       </Section>
 
       <Section theme={theme} title="Start over">

@@ -9,14 +9,17 @@ import { todayIso } from './logic';
  * prompt is actually shown (it caps it at 3 a year).
  *   purchase  - right after a trial or purchase from the onboarding paywall
  *   laterDay  - first launch on a later calendar day than install
- *   session5  - after the 5th saved session
+ *   session3  - after the 3rd saved session (the 5th until 1.0.0; Brian
+ *               approved the move to the 3rd for 1.0.1)
  * Never while the Lifetime price is $0 (a launch offer), or while the store
  * can't say what it is. Same engine as Odo 1.0.6.
  */
-export type ReviewTrigger = 'purchase' | 'laterDay' | 'session5';
+export type ReviewTrigger = 'purchase' | 'laterDay' | 'session3';
 
 const triggerKey = (t: ReviewTrigger) => `review.${t}`;
 const INSTALL_DAY_KEY = 'review.installDay';
+/** The 5th-session trigger's flag from 1.0.0. */
+const OLD_SESSION5_KEY = 'review.session5';
 
 let launchState: 'idle' | 'checking' | 'asked' = 'idle';
 let launchChecked = false;
@@ -48,8 +51,14 @@ export async function maybeRequestReview(trigger: ReviewTrigger): Promise<void> 
 
 /** After a session is saved; sessionCount includes it. */
 export async function maybeRequestReviewAfterSession(sessionCount: number): Promise<void> {
-  if (sessionCount < 5) return;
-  await maybeRequestReview('session5');
+  if (sessionCount < 3) return;
+  try {
+    // Asked already as the old 5th-session trigger: that was this ask, so not again.
+    if (await kvGet(OLD_SESSION5_KEY)) return;
+  } catch {
+    return;
+  }
+  await maybeRequestReview('session3');
 }
 
 /** Once per cold launch, from the main screen: records the install day, and asks on the first later day. */

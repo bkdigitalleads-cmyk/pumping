@@ -1,32 +1,13 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, fonts, Theme } from '../theme';
 import Icon, { IconName } from '../icons';
 import Bottle from '../ui/Bottle';
-import ReminderDiagram from '../ui/ReminderDiagram';
 import { Nudge, Tabs } from '../ui/List';
-import { PillAction, Press, TextAction } from '../ui/Press';
+import { PillAction, Press } from '../ui/Press';
 import { useApp, Focus } from '../state';
-import { kvSet } from '../db';
-import { requestReminderPermission } from '../reminder';
-import {
-  fmtInterval,
-  fmtVol,
-  fromUnit,
-  parseVolume,
-  ReminderAnchor,
-  suggestedIntervalMin,
-  toUnit,
-  Unit,
-  unitLabel,
-  volNumber,
-} from '../logic';
-
-/** Stored on the phone only. Backup attribution, and a future paywall-routing signal. */
-export const SOURCE_KEY = 'onboarding.source';
-
-const SOURCES = ['App Store search', 'TikTok or Instagram', 'A friend or another parent', 'Hospital, NICU or lactation consultant', 'Somewhere else'];
+import { fmtVol, fromUnit, parseVolume, suggestedIntervalMin, toUnit, Unit, unitLabel, volNumber } from '../logic';
 
 const FOCUS: { value: Exclude<Focus, ''>; label: string; sub: string; icon: IconName }[] = [
   { value: 'stash', label: 'Building a freezer stash', sub: 'Back to work soon, or just want a cushion', icon: 'snowflake' },
@@ -35,9 +16,15 @@ const FOCUS: { value: Exclude<Focus, ''>; label: string; sub: string; icon: Icon
   { value: 'care', label: 'NICU or daycare', sub: 'Milk that someone else will feed', icon: 'heart' },
 ];
 
-type Step = 'focus' | 'plan' | 'remind' | 'stash' | 'source';
+type Step = 'focus' | 'plan';
 
-/** Setup questions after the value screens. Everything here can be changed later in Settings. */
+/**
+ * The two setup questions after the welcome screen, then Today. Everything
+ * here can be changed later in Settings. Since 1.0.1 the reminder question
+ * comes when the first session ends (Session.tsx), milk already in the
+ * freezer is added from the empty Stash, and "Where did you hear about us?"
+ * is gone.
+ */
 export default function Onboarding({ onDone }: { onDone: () => void }) {
   const theme = useTheme();
   const { settings, updateSettings } = useApp();
@@ -45,11 +32,6 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
   const [unit, setUnit] = useState<Unit>(settings.unit);
   const [pumps, setPumps] = useState(settings.pumpsPerDay);
   const [goalMl, setGoalMl] = useState(settings.dailyGoalMl);
-  const [anchor, setAnchor] = useState<ReminderAnchor>(settings.reminderAnchor);
-  const [interval, setIntervalMin] = useState(settings.reminderIntervalMin);
-  const [stashText, setStashText] = useState('');
-  const [stashError, setStashError] = useState('');
-  const [asking, setAsking] = useState(false);
 
   const pickFocus = (f: Exclude<Focus, ''>) => {
     updateSettings({ focus: f }).catch(() => {});
@@ -57,34 +39,8 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
   };
 
   const savePlan = () => {
-    updateSettings({ unit, pumpsPerDay: pumps, dailyGoalMl: goalMl }).catch(() => {});
-    setIntervalMin(suggestedIntervalMin(pumps));
-    setStep('remind');
-  };
-
-  const saveRemind = async (turnOn: boolean) => {
-    let enabled = false;
-    if (turnOn) {
-      setAsking(true);
-      enabled = await requestReminderPermission();
-      setAsking(false);
-    }
-    updateSettings({ reminderAnchor: anchor, reminderIntervalMin: interval, reminderEnabled: enabled }).catch(() => {});
-    setStep('stash');
-  };
-
-  const saveStash = () => {
-    const v = parseVolume(stashText, unit);
-    if (stashText.trim() && v == null) {
-      setStashError('Just the number, like 40 or 40.5.');
-      return;
-    }
-    if (v) updateSettings({ startingStashMl: v }).catch(() => {});
-    setStep('source');
-  };
-
-  const pickSource = (s: string) => {
-    kvSet(SOURCE_KEY, s).catch(() => {});
+    // The reminder interval starts from the plan; the reminder question after the first session can change it.
+    updateSettings({ unit, pumpsPerDay: pumps, dailyGoalMl: goalMl, reminderIntervalMin: suggestedIntervalMin(pumps) }).catch(() => {});
     onDone();
   };
 
@@ -100,136 +56,52 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
     );
   }
 
-  if (step === 'plan') {
-    const goalStep = unit === 'oz' ? 1 : 30;
-    const perPump = goalMl / pumps;
-    return (
-      <Page
-        theme={theme}
-        title={settings.focus === 'drop' ? 'Where are you starting from?' : 'How many pumps, and how much?'}
-        line="A rough number is fine. No one is grading this."
-        footer={<PillAction theme={theme} tall label="Continue" onPress={savePlan} />}
-      >
-        <View style={styles.planRow}>
-          <Bottle theme={theme} totalMl={0} goalMl={goalMl} unit={unit} height={170} />
-          <Text style={[styles.projection, { color: theme.ink }]}>
-            {pumps} {pumps === 1 ? 'pump' : 'pumps'} at about {fmtVol(perPump, unit)} each gets you to {fmtVol(goalMl, unit)}. Around{' '}
-            {fmtVol(goalMl * 7, unit)} a week.
-          </Text>
-        </View>
-        <View style={{ paddingVertical: 8 }}>
-          <Tabs
-            theme={theme}
-            value={unit}
-            onChange={setUnit}
-            options={[
-              { value: 'oz', label: 'Ounces' },
-              { value: 'ml', label: 'Milliliters' },
-            ]}
-          />
-        </View>
-        <List theme={theme}>
-          <Nudge theme={theme} label="Pumps a day" value={String(pumps)} onStep={(d) => setPumps((p) => Math.min(16, Math.max(1, p + d)))} />
-          <Nudge
-            theme={theme}
-            label="Daily goal"
-            value={volNumber(goalMl, unit)}
-            unit={unitLabel(unit)}
-            onStep={(d) =>
-              setGoalMl((g) => {
-                const k = Math.round(toUnit(g, unit) / goalStep) + d;
-                return fromUnit(Math.max(1, k) * goalStep, unit);
-              })
-            }
-            onTyped={(t) => {
-              const v = parseVolume(t, unit);
-              if (v != null && v > 0) setGoalMl(v);
-            }}
-          />
-        </List>
-      </Page>
-    );
-  }
-
-  if (step === 'remind') {
-    return (
-      <Page
-        theme={theme}
-        title="Count from the start or the end?"
-        footer={
-          asking ? null : (
-            <View style={{ gap: 4 }}>
-              <PillAction theme={theme} tall label="Turn on reminders" onPress={() => saveRemind(true)} />
-              <TextAction theme={theme} label="Not now" onPress={() => saveRemind(false)} color={theme.inkSoft} align="center" />
-            </View>
-          )
-        }
-      >
-        <View style={{ paddingHorizontal: 20 }}>
-          <ReminderDiagram theme={theme} intervalMin={interval} anchor={anchor} />
-        </View>
-        <View style={{ paddingVertical: 8 }}>
-          <Tabs
-            theme={theme}
-            value={anchor}
-            onChange={setAnchor}
-            options={[
-              { value: 'start', label: 'From the start' },
-              { value: 'end', label: 'From the end' },
-            ]}
-          />
-        </View>
-        <List theme={theme}>
-          <Nudge theme={theme} label="Every" value={fmtInterval(interval)} onStep={(d) => setIntervalMin((i) => Math.min(720, Math.max(30, i + d * 15)))} />
-        </List>
-      </Page>
-    );
-  }
-
-  if (step === 'stash') {
-    return (
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Page
-          theme={theme}
-          title="Milk in the freezer already?"
-          line="A rough total is fine. Dated bags can come later, one at a time."
-          footer={
-            <View style={{ gap: 4 }}>
-              <PillAction theme={theme} tall label="Save and continue" onPress={saveStash} />
-              <TextAction theme={theme} label="Skip for now" onPress={() => setStep('source')} color={theme.inkSoft} align="center" />
-            </View>
-          }
-        >
-          <View style={[styles.stashRow, { borderBottomColor: stashError ? theme.danger : theme.accent }]}>
-            <TextInput
-              style={[styles.stashInput, { color: theme.ink }]}
-              value={stashText}
-              onChangeText={(t) => {
-                setStashText(t);
-                setStashError('');
-              }}
-              placeholder="0"
-              placeholderTextColor={theme.inkFaint}
-              keyboardType="decimal-pad"
-              maxLength={6}
-              accessibilityLabel={`Stored milk in ${unitLabel(unit)}`}
-            />
-            <Text style={[styles.stashUnit, { color: theme.inkSoft }]}>{unitLabel(unit)}</Text>
-          </View>
-          <Text style={[styles.hint, { color: stashError ? theme.danger : theme.inkFaint }]}>
-            {stashError || 'Leave it empty if the freezer is empty.'}
-          </Text>
-        </Page>
-      </KeyboardAvoidingView>
-    );
-  }
-
+  // step === 'plan'
+  const goalStep = unit === 'oz' ? 1 : 30;
+  const perPump = goalMl / pumps;
   return (
-    <Page theme={theme} title="Where did you hear about us?" line="One tap. It helps more than you would think.">
+    <Page
+      theme={theme}
+      title={settings.focus === 'drop' ? 'Where are you starting from?' : 'How many pumps, and how much?'}
+      line="A rough number is fine. No one is grading this."
+      footer={<PillAction theme={theme} tall label="Continue" onPress={savePlan} />}
+    >
+      <View style={styles.planRow}>
+        <Bottle theme={theme} totalMl={0} goalMl={goalMl} unit={unit} height={170} />
+        <Text style={[styles.projection, { color: theme.ink }]}>
+          {pumps} {pumps === 1 ? 'pump' : 'pumps'} at about {fmtVol(perPump, unit)} each gets you to {fmtVol(goalMl, unit)}. Around{' '}
+          {fmtVol(goalMl * 7, unit)} a week.
+        </Text>
+      </View>
+      <View style={{ paddingVertical: 8 }}>
+        <Tabs
+          theme={theme}
+          value={unit}
+          onChange={setUnit}
+          options={[
+            { value: 'oz', label: 'Ounces' },
+            { value: 'ml', label: 'Milliliters' },
+          ]}
+        />
+      </View>
       <List theme={theme}>
-        {SOURCES.map((s) => (
-          <Choice key={s} theme={theme} label={s} onPress={() => pickSource(s)} />
-        ))}
+        <Nudge theme={theme} label="Pumps a day" value={String(pumps)} onStep={(d) => setPumps((p) => Math.min(16, Math.max(1, p + d)))} />
+        <Nudge
+          theme={theme}
+          label="Daily goal"
+          value={volNumber(goalMl, unit)}
+          unit={unitLabel(unit)}
+          onStep={(d) =>
+            setGoalMl((g) => {
+              const k = Math.round(toUnit(g, unit) / goalStep) + d;
+              return fromUnit(Math.max(1, k) * goalStep, unit);
+            })
+          }
+          onTyped={(t) => {
+            const v = parseVolume(t, unit);
+            if (v != null && v > 0) setGoalMl(v);
+          }}
+        />
       </List>
     </Page>
   );
@@ -297,8 +169,4 @@ const styles = StyleSheet.create({
   planRow: { flexDirection: 'row', alignItems: 'center', gap: 18, paddingHorizontal: 24 },
   projection: { flex: 1, fontFamily: fonts.soft, fontSize: 19, lineHeight: 27 },
   footer: { paddingHorizontal: 20, paddingTop: 8 },
-  stashRow: { flexDirection: 'row', alignItems: 'baseline', gap: 12, marginHorizontal: 24, borderBottomWidth: 2 },
-  stashInput: { flex: 1, paddingVertical: 8, fontSize: 48, fontFamily: fonts.display },
-  stashUnit: { fontSize: 22, fontFamily: fonts.heading },
-  hint: { fontSize: 15, paddingHorizontal: 24 },
 });

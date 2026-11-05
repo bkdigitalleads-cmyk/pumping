@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 import { useTheme, fonts, radius, Theme } from '../theme';
 import Icon from '../icons';
-import { useApp, Focus, FREE_BAG_LIMIT, FREE_SESSION_LIMIT } from '../state';
+import { useApp, Focus, FREE_BAG_LIMIT, FREE_DAYS } from '../state';
 import { getOffering, purchasePackage, restorePurchases, isBillingAvailable } from '../purchases';
 import { getTrialEligibleIds, trialLabel } from '../trial';
 import { cancelTrialReminder, scheduleTrialReminderIfTrial } from '../reminder';
@@ -13,7 +13,7 @@ import { TERMS_URL } from '../links';
 import MiniSheet from '../ui/MiniSheet';
 import { PillAction, Press, RoundButton } from '../ui/Press';
 
-/** On the first-launch paywall the close button appears after this delay. */
+/** On the onboarding paywall (after the first session) the close button appears after this delay. */
 const ONBOARDING_CLOSE_DELAY_MS = 3000;
 
 /** The Lifetime product's name in the app. Its price always comes from StoreKit. */
@@ -36,7 +36,8 @@ const FOCUS_LINE: Record<Focus, string> = {
  * Two paywalls in one component (same pattern as Odo 1.0.6). Products:
  * pumping_pro_weekly ($rc_weekly, 3-day free trial) and pumping_pro_lifetime
  * ($rc_lifetime, the Pumping Pass). No yearly plan.
- *  - onboarding: the first-launch paywall after the trial and reminder
+ *  - onboarding: the paywall after the first saved session (since 1.0.1;
+ *    it used to close the first launch), after the trial and reminder
  *    screens. Weekly is preselected, trial wording shows only when this Apple
  *    ID can get the trial, and the close button appears after 3 seconds.
  *  - in-app (session or bag limit, 30/90 days, PDFs, Pro links): the
@@ -66,8 +67,11 @@ export default function PaywallModal({ privacyUrl, onboarding = false }: { priva
   const [restoring, setRestoring] = useState(false);
   const [canClose, setCanClose] = useState(!onboarding);
 
+  // One modal serves both kinds since 1.0.1 (App.tsx switches `onboarding`),
+  // so the close button is set again each time it opens.
   useEffect(() => {
-    if (!paywallVisible || !onboarding) return;
+    if (!paywallVisible) return;
+    if (!onboarding) return setCanClose(true);
     setCanClose(false);
     const t = setTimeout(() => setCanClose(true), ONBOARDING_CLOSE_DELAY_MS);
     return () => clearTimeout(t);
@@ -218,7 +222,7 @@ export default function PaywallModal({ privacyUrl, onboarding = false }: { priva
             </Text>
           ) : (
             <Text style={[styles.what, { color: theme.inkSoft }]}>
-              Pro keeps every session past the first {FREE_SESSION_LIMIT}, holds the whole freezer instead of {FREE_BAG_LIMIT} bags, opens 30 and 90 days of
+              Pro keeps every session past the first {FREE_DAYS} days, holds the whole freezer instead of {FREE_BAG_LIMIT} bags, opens 30 and 90 days of
               trends, and makes the supply log and the caregiver sheet.
             </Text>
           )}
