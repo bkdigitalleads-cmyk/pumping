@@ -50,7 +50,8 @@ export const DEFAULT_SETTINGS: Settings = {
   ...DEFAULT_STORAGE,
 };
 
-const SETTING_PREFIX = 'setting.';
+/** Settings rows are stored as `setting.<name>`; a missing row means never set. */
+export const SETTING_PREFIX = 'setting.';
 export const ONBOARDED_KEY = 'flag.onboarded';
 const ACTIVE_KEY = 'activeSession';
 

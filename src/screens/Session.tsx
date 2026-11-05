@@ -544,7 +544,8 @@ function ReminderAsk({ line, onClose }: { line: string; onClose: () => void }) {
       setAsking(true);
       enabled = await requestReminderPermission();
     }
-    updateSettings({ reminderAnchor: anchor, reminderIntervalMin: interval, reminderEnabled: enabled }).catch(() => {});
+    // Stored before the sheet closes, so the trial screen after it sees the answer.
+    await updateSettings({ reminderAnchor: anchor, reminderIntervalMin: interval, reminderEnabled: enabled }).catch(() => {});
     onClose();
   };
 

@@ -4,11 +4,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { useTheme, fonts, Theme } from '../theme';
 import Icon from '../icons';
-import { useApp } from '../state';
+import { useApp, SETTING_PREFIX } from '../state';
 import { getOffering } from '../purchases';
 import { getTrialEligibleIds, trialLabel } from '../trial';
+import { kvGet } from '../db';
 import { requestReminderPermission } from '../reminder';
-import { fromUnit } from '../logic';
+import { fromUnit, trialGrantTurnsOnReminder } from '../logic';
 import Bottle from '../ui/Bottle';
 import Tape, { Marker } from '../ui/Tape';
 import { PillAction } from '../ui/Press';
@@ -141,10 +142,13 @@ export function TrialSteps({ onDone }: { onDone: () => void }) {
       onPress={async () => {
         // Ask for notifications, then on to the paywall whatever the answer.
         setWaiting(true);
-        // Notifications allowed here (for example after "Not now" on the
-        // reminder step) also turn the next-pump reminder on, so Settings
-        // matches what iOS allows. It stays switchable in Settings.
-        if (await requestReminderPermission()) await updateSettings({ reminderEnabled: true }).catch(() => {});
+        // This screen promises only the day-before trial reminder. Allowing
+        // notifications here turns the next-pump reminder on only for an
+        // install that never stored a reminder choice (the build 2 fix); after
+        // "Not now" on the reminder question, "Not now" wins.
+        const granted = await requestReminderPermission();
+        const stored = await kvGet(SETTING_PREFIX + 'reminderEnabled').catch(() => 'unknown');
+        if (trialGrantTurnsOnReminder(stored, granted)) await updateSettings({ reminderEnabled: true }).catch(() => {});
         setWaiting(false);
         onDone();
       }}

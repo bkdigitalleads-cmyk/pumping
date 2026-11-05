@@ -425,6 +425,18 @@ export function secondChanceDue(stored: string | null, today: string): boolean {
   return stored != null && /^\d{4}-\d{2}-\d{2}$/.test(stored) && stored < today;
 }
 
+/**
+ * Notifications allowed on the trial's day-before screen: whether that also
+ * turns the next-pump reminder on. Only when no reminder choice was ever
+ * stored (the reminderEnabled row is missing), so iOS and Settings agree for
+ * installs that never saw the reminder question. An answer to the question
+ * ("Not now" included) or a choice in Settings always wins; the screen then
+ * schedules only the day-before trial reminder.
+ */
+export function trialGrantTurnsOnReminder(storedReminderEnabled: string | null, granted: boolean): boolean {
+  return granted && storedReminderEnabled == null;
+}
+
 // ---------- formatting ----------
 
 /** "18 min", "1 h 5 m", "45 sec". */

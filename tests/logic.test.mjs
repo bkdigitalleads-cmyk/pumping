@@ -260,3 +260,15 @@ test('one-time flag: the second chance comes on a later calendar day, once', () 
   assert.equal(L.secondChanceDue('2026-12-31', '2027-01-01'), true);
   assert.equal(L.secondChanceDue('garbage', '2026-11-05'), false);
 });
+
+test('trial reminder screen: "Not now" on the reminder question wins', () => {
+  // Answered "Not now" (stored false): allowing notifications for the trial reminder leaves the pump reminder off.
+  assert.equal(L.trialGrantTurnsOnReminder('false', true), false);
+  // Already on, or turned off in Settings: nothing to change.
+  assert.equal(L.trialGrantTurnsOnReminder('true', true), false);
+  // Never asked (no stored row): the build 2 behaviour, allowing turns it on.
+  assert.equal(L.trialGrantTurnsOnReminder(null, true), true);
+  // Not allowed: never on.
+  assert.equal(L.trialGrantTurnsOnReminder(null, false), false);
+  assert.equal(L.trialGrantTurnsOnReminder('false', false), false);
+});
