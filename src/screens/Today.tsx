@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTheme, fonts, Theme } from '../theme';
-import { useApp, FREE_SESSION_LIMIT } from '../state';
-import { countSessions, getLastSession, getSessionsBetween } from '../db';
+import { useApp } from '../state';
+import { getLastSession, getSessionsBetween } from '../db';
+import { getFirstSessionAt } from '../firstRun';
 import {
   addDays,
   fmtAmPm,
@@ -12,7 +13,10 @@ import {
   fmtHm,
   fmtInterval,
   fmtVol,
+  fmtTime,
   fmtWeekday,
+  FREE_DAYS,
+  freeWindowEndsAt,
   nextPumpAt,
   plural,
   Session,
@@ -43,7 +47,8 @@ export default function TodayScreen({
   const [today, setToday] = useState(todayIso());
   const [sessions, setSessions] = useState<Session[]>([]);
   const [last, setLast] = useState<Session | null>(null);
-  const [count, setCount] = useState(0);
+  // Start of the free window; null before the first session.
+  const [firstAt, setFirstAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const unit = settings.unit;
 
@@ -52,7 +57,7 @@ export default function TodayScreen({
     setToday(day);
     setSessions(await getSessionsBetween(startOfDayMs(day), startOfDayMs(addDays(day, 1))));
     setLast(await getLastSession());
-    setCount(await countSessions());
+    setFirstAt(await getFirstSessionAt());
   }, []);
 
   useEffect(() => {
@@ -72,7 +77,6 @@ export default function TodayScreen({
   }, [active, today, load]);
 
   const totalMl = sessions.reduce((s, x) => s + x.leftMl + x.rightMl, 0);
-  const left = FREE_SESSION_LIMIT - count;
   const goal = settings.dailyGoalMl;
   const toGo = goal - totalMl;
 
@@ -91,9 +95,7 @@ export default function TodayScreen({
           {!isPro && (
             <Press onPress={showPaywall} accessibilityRole="button" hitSlop={6} style={styles.freeLine}>
               <Text style={[styles.freeText, { color: theme.accent }]}>
-                {left <= 0
-                  ? `That was your third free session. Pumping Pro keeps the rest.`
-                  : `${plural(left, 'free session')} left. Pumping Pro keeps every one.`}
+                {freeLine(firstAt, now)}
               </Text>
             </Press>
           )}
@@ -260,6 +262,19 @@ function TimelineDot({ theme, ghost = false }: { theme: Theme; ghost?: boolean }
       />
     </View>
   );
+}
+
+const DAY_MS = 24 * 60 * 60_000;
+
+/** The free-plan line under the headline, for anyone without Pro. */
+function freeLine(firstAt: number | null, now: number): string {
+  const ends = freeWindowEndsAt(firstAt);
+  if (ends == null) return `Every session is free for your first ${FREE_DAYS} days. Pumping Pro keeps it going after that.`;
+  const left = ends - now;
+  if (left <= 0) return `Your ${FREE_DAYS} free days are up. Pumping Pro logs new sessions, and everything so far stays.`;
+  if (left > DAY_MS) return `Free for ${plural(Math.ceil(left / DAY_MS), 'more day')}. Pumping Pro keeps every session after that.`;
+  const when = todayIso(ends) === todayIso(now) ? fmtTime(ends) : `tomorrow at ${fmtTime(ends)}`;
+  return `Free until ${when}. Pumping Pro keeps every session after that.`;
 }
 
 const styles = StyleSheet.create({

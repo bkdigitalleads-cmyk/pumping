@@ -1,4 +1,4 @@
-# Pumping Tracker, App Store metadata (1.0.0)
+# Pumping Tracker, App Store metadata (1.0.1)
 
 Everything here is pasted into App Store Connect by Brian and Cowork. No em dashes anywhere. Never write "Pump Log" (another app's registered trademark).
 
@@ -18,6 +18,9 @@ Breastfeeding & Pump Timer
 stash,reminder,lactation,exclusive,supply,bag,frozen,freezer,storage,schedule,nicu,oz,session,mom
 
 (Brian approved, Oct 21.) Rules: no word from the name or subtitle (pumping, tracker, breast, milk, breastfeeding, pump, timer), never "log" and never "pump log".
+
+## What's New in 1.0.1
+Start logging right away: the first pump comes before any setup. Reminders are offered when your first session ends. The free plan now covers every session for your first three days. Small fixes.
 
 ## Promotional text (154/170)
 Log a session in seconds, see today's ounces at a glance, and get your next-pump reminder counted from the start or the end. Your freezer stash, in order.
@@ -57,7 +60,7 @@ SHARE WHEN YOU NEED TO (PRO)
 • CSV export of every session
 
 PUMPING PRO
-Start free with 3 sessions and up to 5 bags in your stash, and preview your supply log any time. Pumping Pro keeps every session, holds your whole stash, opens 30 and 90 day trends, and makes both PDFs and the CSV. Choose a weekly subscription with a free trial, or the Pumping Pass, a one-time purchase that is yours to keep.
+Start free: every session for your first 3 days, up to 5 bags in your stash, and a preview of your supply log any time. Pumping Pro keeps every session, holds your whole stash, opens 30 and 90 day trends, and makes both PDFs and the CSV. Choose a weekly subscription with a free trial, or the Pumping Pass, a one-time purchase that is yours to keep.
 
 Pumping Tracker is a personal log. It does not give medical advice. Storage times are general guidance; follow your care team's advice for your baby.
 
@@ -83,15 +86,15 @@ Same answers as Odo: Data Not Collected for app content. Sessions, bags and sett
 ## App Review note (paste into ASC, Notes)
 Pumping Tracker is an offline log for parents who pump breast milk. There is no account or sign-in, and everything is stored on the device.
 
-On first launch you see three short intro screens and a few setup questions (what matters most, pumps a day and a daily goal, reminder style, any milk already stored, and where you heard about us). The reminder screen can ask for notification permission; it is used only for local reminders on the device (the next-pump reminder, and one reminder 1 day before a free trial ends). If the Apple ID can still get the free trial, two screens explain the trial and the reminder. Then the paywall opens. The close button (X, top right) appears after 3 seconds. Tap it to keep using the app for free.
+On first launch you see one intro screen and two setup questions (what matters most, then pumps a day and a daily goal), then the Today screen. Tap Start pumping, then Done to save the session. When the first session is saved, one screen offers the next-pump reminder; "Turn on reminders" asks for notification permission, which is used only for local reminders on the device (the next-pump reminder, and one reminder 1 day before a free trial ends). "Not now" skips it. If the Apple ID can still get the free trial, two screens then explain the trial and the reminder. Then the paywall opens. The close button (X, top right) appears after 3 seconds. Tap it to keep using the app for free.
 
-The app is free up to 3 logged sessions and 5 bags in the stash. After that, Start pumping and Add a bag open the paywall. The supply log PDF, the caregiver sheet PDF, CSV export and the 30 and 90 day trends are part of Pro. Free users can open a preview of the supply log from the Trends tab; it is marked SAMPLE, and its Share and Print buttons open the paywall. Restore purchases is on the paywall and in Settings.
+The app is free for every session in the first 3 days after the first one, and for 5 bags in the stash. After that, Start pumping, Log a past session and Add a bag open the paywall; a session already running can always be saved, and everything logged stays viewable. The supply log PDF, the caregiver sheet PDF, CSV export and the 30 and 90 day trends are part of Pro. Free users can open a preview of the supply log from the Trends tab; it is marked SAMPLE, and its Share and Print buttons open the paywall. Restore purchases is on the paywall and in Settings.
 
 The app does not give medical advice. Storage times are editable defaults with a link to the CDC's breast milk storage page.
 
 ## Screenshot plan (iPhone 6.9" and 6.5", light mode unless noted; Brian captures from a TestFlight build)
 1. Today with the bottle two thirds full and "Next pump in 1 h 20 m": "See your day at a glance"
-2. Onboarding reminder screen with the start-or-end drawing: "Reminders from the start or the end. Your call."
+2. The reminder question after the first session, with the start-or-end drawing: "Reminders from the start or the end. Your call." (since 1.0.1 it is no longer an onboarding screen)
 3. Live session with the big timer and the left and right halves: "Log a session with one thumb"
 4. Stash with bags on the fridge and freezer shelves and the "use next" tape: "Your freezer stash, oldest first"
 5. The masking-tape label ("Write this on the bag"): "Every bag labeled and dated"

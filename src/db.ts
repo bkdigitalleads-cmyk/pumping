@@ -190,6 +190,13 @@ export async function getLastSession(): Promise<Session | null> {
   return row ? rowToSession(row) : null;
 }
 
+/** Start of the earliest saved session, or null when there are none. */
+export async function getFirstSessionStart(): Promise<number | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ t: number | null }>('SELECT MIN(started_at) AS t FROM sessions');
+  return row?.t ?? null;
+}
+
 export async function countSessions(): Promise<number> {
   const db = await getDb();
   const row = await db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM sessions');

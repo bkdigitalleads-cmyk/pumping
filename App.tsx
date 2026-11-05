@@ -6,8 +6,10 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useFonts } from 'expo-font';
 import { useTheme, fonts, FONT_FILES } from './src/theme';
 import Icon, { IconName } from './src/icons';
-import { AppProvider, useApp, ONBOARDED_KEY, FREE_SESSION_LIMIT } from './src/state';
+import { AppProvider, useApp, ONBOARDED_KEY } from './src/state';
 import { countSessions, kvGet, kvSet } from './src/db';
+import { canLogNewSession, firstFlowStep, todayIso } from './src/logic';
+import { FIRST_FLOW_KEY, getFirstSessionAt, SECOND_CHANCE_KEY, takeSecondChance } from './src/firstRun';
 import TodayScreen from './src/screens/Today';
 import StashScreen from './src/screens/Stash';
 import TrendsScreen from './src/screens/Trends';
@@ -15,7 +17,7 @@ import SettingsScreen from './src/screens/Settings';
 import SessionModal, { SessionMode } from './src/screens/Session';
 import PaywallModal from './src/screens/Paywall';
 import Onboarding from './src/screens/Onboarding';
-import Welcome, { TrialSteps } from './src/screens/Welcome';
+import Welcome, { TrialSteps, trialOffer } from './src/screens/Welcome';
 import { maybeRequestReviewOnLaunch } from './src/reviews';
 import { softTap } from './src/ui/motion';
 import { PRIVACY_URL } from './src/links';
@@ -35,10 +37,17 @@ function Shell() {
   const { ready, isPro, showPaywall, paywallVisible, active, startSession, notice } = useApp();
   const [tab, setTab] = useState<Tab>('today');
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
-  // New installs: value screens, setup questions, trial and reminder screens, then the paywall.
-  const [step, setStep] = useState<'welcome' | 'setup' | 'trial' | 'paywall'>('welcome');
-  const paywallOpened = useRef(false);
+  // New installs: one welcome screen and two setup questions, then Today.
+  const [step, setStep] = useState<'welcome' | 'setup'>('welcome');
   const [session, setSession] = useState<{ mode: SessionMode; id: number | null } | null>(null);
+  // After the first saved session, once ever: trial screens (when eligible), then the onboarding paywall.
+  const [afterFirst, setAfterFirst] = useState<'idle' | 'trial' | 'paywall'>('idle');
+  const firstFlowBusy = useRef(false);
+  // One paywall modal; it shows as the onboarding paywall only in that moment.
+  const [paywallMode, setPaywallMode] = useState<'inapp' | 'onboarding'>('inapp');
+  // Read after awaits, when the closure that started them may be a render behind.
+  const latest = useRef({ isPro, running: active != null });
+  latest.current = { isPro, running: active != null };
 
   useEffect(() => {
     if (!ready || onboarded !== null) return;
@@ -53,22 +62,76 @@ function Shell() {
     })().catch(() => setOnboarded(true)); // fail open: never trap the user
   }, [ready, onboarded, isPro]);
 
-  const openOnboardingPaywall = () => {
-    if (paywallOpened.current) return;
-    paywallOpened.current = true;
-    setStep('paywall');
+  // Straight to Today after the setup questions. 'pending' marks this as a
+  // new install, so the trial screens and paywall come after its first session.
+  const finishOnboarding = () => {
+    kvSet(FIRST_FLOW_KEY, 'pending')
+      .then(() => kvSet(ONBOARDED_KEY, '1'))
+      .catch(() => {});
+    trialOffer();
+    setOnboarded(true);
+  };
+
+  const openFirstPaywall = () => {
+    setAfterFirst('paywall');
+    setPaywallMode('onboarding');
     showPaywall();
   };
 
-  const finishOnboarding = () => {
-    setOnboarded(true);
-    kvSet(ONBOARDED_KEY, '1').catch(() => {});
+  /**
+   * The paywall after the first saved session (the aha), once ever. Runs when
+   * the session sheet closes, and once when the main screen opens in case the
+   * app was closed in between. True when it started.
+   */
+  const runFirstFlow = async (afterSheet: boolean): Promise<boolean> => {
+    if (firstFlowBusy.current) return false;
+    firstFlowBusy.current = true;
+    try {
+      const flag = await kvGet(FIRST_FLOW_KEY);
+      const count = await countSessions();
+      const step = firstFlowStep(flag, count, latest.current.isPro, latest.current.running);
+      if (step === 'none' || step === 'wait') {
+        firstFlowBusy.current = false;
+        return false;
+      }
+      await kvSet(FIRST_FLOW_KEY, 'done');
+      if (step === 'skip') {
+        firstFlowBusy.current = false;
+        return false;
+      }
+      // Shown today; a later calendar day gets one more look if it is closed without buying.
+      await kvSet(SECOND_CHANCE_KEY, todayIso());
+      if (await trialOffer()) {
+        // The trial screens are drawn over the main screen, under the closing session sheet.
+        setAfterFirst('trial');
+      } else {
+        // Straight to the paywall; give the session sheet time to slide away first.
+        setTimeout(openFirstPaywall, afterSheet ? 600 : 0);
+      }
+      return true;
+    } catch {
+      firstFlowBusy.current = false;
+      return false;
+    }
   };
 
-  // When the onboarding paywall closes (purchase or close button), onboarding is done.
+  // Warm up the trial check while the after-first-session moment is still to come.
   useEffect(() => {
-    if (paywallOpened.current && !paywallVisible && onboarded === false) finishOnboarding();
-  }, [paywallVisible, onboarded]);
+    if (!ready || !onboarded) return;
+    kvGet(FIRST_FLOW_KEY)
+      .then((f) => {
+        if (f === 'pending') trialOffer();
+      })
+      .catch(() => {});
+  }, [ready, onboarded]);
+
+  // When the onboarding paywall closes (purchase or close button), back to Today.
+  useEffect(() => {
+    if (paywallVisible || afterFirst !== 'paywall') return;
+    setAfterFirst('idle');
+    setPaywallMode('inapp');
+    firstFlowBusy.current = false;
+  }, [paywallVisible, afterFirst]);
 
   // The screen stays awake while a session runs, on Today as well as in the session itself.
   const running = active != null;
@@ -96,8 +159,8 @@ function Shell() {
     };
   }, [running]);
 
-  /** New sessions stop at the free limit; a session already running can always be finished. */
-  const canLogNew = async () => isPro || (await countSessions()) < FREE_SESSION_LIMIT;
+  /** New sessions stop when the free days are up; a session already running can always be finished. */
+  const canLogNew = async () => isPro || canLogNewSession(isPro, await getFirstSessionAt(), Date.now());
 
   const onStart = async () => {
     if (!active) {
@@ -114,6 +177,11 @@ function Shell() {
 
   const onOpenSession = (id: number) => setSession({ mode: 'edit', id });
 
+  const onCloseSession = () => {
+    setSession(null);
+    runFirstFlow(true);
+  };
+
   if (!ready || onboarded === null) {
     return <View style={{ flex: 1, backgroundColor: theme.bg }} />;
   }
@@ -122,16 +190,14 @@ function Shell() {
     return (
       <View style={{ flex: 1, backgroundColor: theme.bg, paddingTop: insets.top }}>
         {step === 'welcome' && <Welcome onDone={() => setStep('setup')} />}
-        {step === 'setup' && <Onboarding onDone={() => setStep('trial')} />}
-        {step === 'trial' && <TrialSteps onDone={openOnboardingPaywall} />}
-        <PaywallModal privacyUrl={PRIVACY_URL} onboarding />
+        {step === 'setup' && <Onboarding onDone={finishOnboarding} />}
       </View>
     );
   }
 
   return (
     <>
-      <LaunchReview />
+      <LaunchChecks runFirstFlow={() => runFirstFlow(false)} />
       <View style={{ flex: 1, backgroundColor: theme.bg, paddingTop: insets.top }}>
         <View style={{ flex: 1 }}>
           {tab === 'today' && (
@@ -176,18 +242,35 @@ function Shell() {
           visible={session != null}
           mode={session?.mode ?? 'live'}
           sessionId={session?.id ?? null}
-          onClose={() => setSession(null)}
+          onClose={onCloseSession}
         />
-        <PaywallModal privacyUrl={PRIVACY_URL} />
+        {afterFirst === 'trial' && (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.bg, paddingTop: insets.top }]}>
+            <TrialSteps onDone={openFirstPaywall} />
+          </View>
+        )}
+        <PaywallModal privacyUrl={PRIVACY_URL} onboarding={paywallMode === 'onboarding'} />
       </View>
     </>
   );
 }
 
-/** Once per launch, from the main screen: the "later calendar day" rating trigger. */
-function LaunchReview() {
+/**
+ * Once per launch, from the main screen, at most one of these (never more
+ * than one paywall in a launch, and no rating ask on top of a paywall):
+ *   1. the after-first-session moment, if the app closed before it ran
+ *   2. the paywall's second chance, on a later calendar day
+ *   3. the "later calendar day" rating trigger
+ */
+function LaunchChecks({ runFirstFlow }: { runFirstFlow: () => Promise<boolean> }) {
+  const { isPro, active, showPaywall } = useApp();
   useEffect(() => {
-    maybeRequestReviewOnLaunch();
+    (async () => {
+      if (await runFirstFlow()) return;
+      if (await takeSecondChance(isPro, active != null)) return showPaywall();
+      maybeRequestReviewOnLaunch();
+    })().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return null;
 }

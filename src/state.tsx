@@ -2,11 +2,15 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { AppState as RNAppState } from 'react-native';
 import { initPurchases, getIsPro, checkPro, onProChange } from './purchases';
 import { kvAll, kvDelete, kvGet, kvSet } from './db';
-import { DEFAULT_STORAGE, fromUnit, ReminderAnchor, StorageTimes, Unit } from './logic';
+import { DEFAULT_STORAGE, FREE_DAYS, fromUnit, ReminderAnchor, StorageTimes, Unit } from './logic';
 import { cancelPumpReminder, syncPumpReminder, syncTrialReminder } from './reminder';
 
-/** Free tier. Pro removes all three. */
-export const FREE_SESSION_LIMIT = 3;
+/**
+ * Free tier. Pro removes all three. Sessions: every one for the first
+ * FREE_DAYS from the first session (canLogNewSession in logic.ts), then
+ * new sessions ask for Pro. Until 1.0.0 it was 3 sessions ever.
+ */
+export { FREE_DAYS };
 export const FREE_BAG_LIMIT = 5;
 export const FREE_TREND_DAYS = 7;
 
@@ -24,7 +28,8 @@ export interface Settings extends StorageTimes {
   /** Optional, a plain number the parent enters; drives "days of milk". */
   babyNeedMl: number | null;
   /**
-   * Milk already stored when the app was set up, entered once in onboarding.
+   * Milk already stored when the app was set up, entered as one total from
+   * the empty Stash (in onboarding until 1.0.0).
    * Kept here rather than as bags, since it has no dates; it counts in the
    * stash totals and shows as its own line until cleared.
    */
@@ -45,7 +50,8 @@ export const DEFAULT_SETTINGS: Settings = {
   ...DEFAULT_STORAGE,
 };
 
-const SETTING_PREFIX = 'setting.';
+/** Settings rows are stored as `setting.<name>`; a missing row means never set. */
+export const SETTING_PREFIX = 'setting.';
 export const ONBOARDED_KEY = 'flag.onboarded';
 const ACTIVE_KEY = 'activeSession';
 
