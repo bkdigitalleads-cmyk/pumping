@@ -1,4 +1,4 @@
-# Pumping Tracker, App Store metadata (1.0.1)
+# Pumping Tracker, App Store metadata (1.0.2)
 
 Everything here is pasted into App Store Connect by Brian and Cowork. No em dashes anywhere. Never write "Pump Log" (another app's registered trademark).
 
@@ -14,13 +14,39 @@ Breastfeeding & Pump Timer
 
 (Changed Oct 21 with the new name, Brian approved. Earlier drafts: "Milk Stash, Timer & Reminders", then "Breastfeeding Timer & Reminder".)
 
-## Keywords (97/100)
-stash,reminder,lactation,exclusive,supply,bag,frozen,freezer,storage,schedule,nicu,oz,session,mom
+## Keywords (99/100)
+stash,schedule,storage,reminder,lactation,freezer,nicu,mom,exclusive,supply,expressed,frozen,bag,oz
 
-(Brian approved, Oct 21.) Rules: no word from the name or subtitle (pumping, tracker, breast, milk, breastfeeding, pump, timer), never "log" and never "pump log".
+(1.0.2. Planned by Cowork as baby,feeding,newborn,nursing,feed,stash,schedule,storage,reminder,lactation,bottle,freezer,nicu,mom; baby, feeding, newborn, nursing, feed and bottle were swapped for exclusive, supply, expressed, frozen, bag and oz because the app logs pumping only, not feeds, nursing or a baby; see "Extra listings indexed for US search". 1.0.0 and 1.0.1, Brian approved Oct 21: stash,reminder,lactation,exclusive,supply,bag,frozen,freezer,storage,schedule,nicu,oz,session,mom.) Rules: no word from the name or subtitle (pumping, tracker, breast, milk, breastfeeding, pump, timer), never "log" and never "pump log". tests/metadata.test.mjs checks this field against the en-US row below.
 
-## What's New in 1.0.1
-Start logging right away: the first pump comes before any setup. Reminders are offered when your first session ends. The free plan now covers every session for your first three days. Small fixes.
+## What's New in 1.0.2
+Small fixes and improvements.
+
+(1.0.1: Start logging right away: the first pump comes before any setup. Reminders are offered when your first session ends. The free plan now covers every session for your first three days. Small fixes.)
+
+## Extra listings indexed for US search
+Apple indexes these localizations for US App Store search as well as English (U.S.) and Spanish (Mexico). Each gets its own English name, subtitle and keyword field, and the English (U.S.) description, promotional text and What's New, pasted into App Store Connect by Brian and Cowork (Visual Timer and Chores already ship this way). Spanish (Mexico) stays as it is in App Store Connect; its name and subtitle are not recorded here.
+
+Rules, checked by `npm test` (tests/metadata.test.mjs): name and subtitle at most 30 characters, keywords at most 100 bytes, no spaces in keywords, no keyword repeated in a field or taken from that listing's name or subtitle, no brand names, never "Pump Log" and never the word "log" in any name, subtitle or keyword. Every word must match what the app does: pumping sessions with a timer and left and right amounts, today's total against a goal, the next-pump reminder from the start or the end, the freezer stash with use-by dates and thawing, trends, the supply log and caregiver sheet PDFs. It does not log nursing, bottle feeds or anything else about a baby, so no baby, feeding, feed, newborn, nursing or bottle, and no breastfeeding or nursing timer.
+
+| locale | name | subtitle | keywords | name | subtitle | keyword bytes |
+|---|---|---|---|---|---|---|
+| en-US | Pumping Tracker: Breast Milk | Breastfeeding & Pump Timer | stash,schedule,storage,reminder,lactation,freezer,nicu,mom,exclusive,supply,expressed,frozen,bag,oz | 28 | 26 | 99 |
+| es-MX | (unchanged in ASC) | (unchanged in ASC) | lactancia,sacaleches,materna,congelador,bolsa,onzas,ml,recordatorio,banco,exclusiva,bebe,mama,nicu | | | 98 |
+| ar-SA | Breast Milk Tracker: Pumping | Session Timer & Freezer Stash | storage,supply,exclusive,mom,caregiver,daycare,fridge,thawing,output,ounces,work,interval,rotation | 28 | 29 | 98 |
+| fr-FR | Breast Pump Tracker & Stash | Pumping Timer, Milk Storage | breastfeeding,exclusive,freezer,supply,lactation,app,frozen,bag,label,expiration,daycare,thaw,oz,ml | 27 | 27 | 99 |
+| ko | Lactation Tracker: Pump Output | Breast Milk & Pumping Timer | stash,supply,schedule,reminder,mom,storage,freezer,session,countdown,interval,daily,goal,ounces,ml | 30 | 27 | 98 |
+| pt-BR | Exclusive Pumping Tracker | Breast Milk Stash & Timer | breastfeeding,freezer,storage,supply,mom,session,pump,app,work,fridge,thawing,caregiver,label,nicu | 25 | 25 | 98 |
+| ru | Milk Stash: Freezer Inventory | Breast Milk Storage Tracker | pumping,pump,breastfeeding,bag,frozen,oz,supply,lactation,timer,rotation,label,daycare,ml,expressed | 29 | 27 | 99 |
+| vi | Pumping Timer: Breast Pump | Milk Supply & Session Tracker | breastfeeding,stash,freezer,storage,exclusive,lactation,reminder,countdown,ounces,nicu,work,daily | 26 | 29 | 97 |
+| zh-Hans | Breast Pumping Tracker & Timer | Pump Sessions, Milk Stash | breastfeeding,freezer,storage,schedule,reminder,mom,exclusive,supply,frozen,thaw,caregiver,bag,nicu | 30 | 25 | 99 |
+| zh-Hant | Pumping Schedule: Milk Tracker | Breast Pump Timer & Reminders | breastfeeding,stash,freezer,storage,supply,session,nicu,exclusive,output,lactation,mom,fridge,label | 30 | 29 | 99 |
+
+Changed from Cowork's draft (Nov 25):
+- Keywords baby, feeding, feed, newborn, nursing and bottle removed everywhere (English (U.S.) and all eight). Apple pairs keywords with the name, so they search as "baby tracker", "feeding tracker", "nursing timer" and "bottle feeding", features the app does not have. Replaced with words for what it does: exclusive, supply, expressed, frozen, bag, oz, ml, ounces, fridge, thaw or thawing, caregiver, daycare, label, rotation, expiration (use-by dates), countdown, interval, daily, goal, output, session, work (back-to-work pumping).
+- ar-SA subtitle "Breastfeeding & Pumping Timer" reads as a breastfeeding (nursing) timer: now "Session Timer & Freezer Stash". stash, freezer and session left its keywords as a result.
+- ko name "Breastfeeding Tracker: Pump" promises a breastfeeding tracker: now "Lactation Tracker: Pump Output". lactation left its keywords.
+- Kept as drafted: every other name and subtitle, and breastfeeding as a keyword (it is in the live English subtitle). No field reads as a medical claim: lactation, supply and nicu describe who the app is for and what the PDFs show, not an effect on supply or health.
 
 ## Promotional text (154/170)
 Log a session in seconds, see today's ounces at a glance, and get your next-pump reminder counted from the start or the end. Your freezer stash, in order.
